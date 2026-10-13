@@ -141,3 +141,42 @@ def test_api_submit_defaults_data_date(client):
     assert record is not None
     assert record["data_date"] is not None
     assert len(record["data_date"]) == 10  # YYYY-MM-DD
+
+def test_webform_dashboard_access_options(client):
+    """
+    Verify that the webform provides clear, visible options to access the dashboard
+    across multiple strategic places: top bar, header, drawer, and success modal.
+    """
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+    
+    # 1. Top bar button
+    assert 'href="/dashboard"' in html
+    assert "topDashboardBtn" in html or "dashboard-top-btn" in html
+    
+    # 2. Drawer footer button
+    assert "drawerDashboardBtn" in html or "drawer-btn-dashboard" in html
+    
+    # 3. Success modal button
+    assert "modalDashboardBtn" in html
+
+def test_webform_blocks_editing_of_uploaded_records(client):
+    """
+    Verify that client-side logic strictly prevents editing records that have already been submitted (uploaded).
+    """
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+
+    # Verify queue list locks uploaded items
+    assert "!isUploaded" in html
+    assert "Bloqueado" in html or "Enviado" in html
+    
+    # Verify loadRecordToEdit guards against uploaded status
+    assert 'item.status === "uploaded"' in html
+    assert "não pode mais ser editado" in html
+    
+    # Verify saveAsDraft and submit guard against uploaded status
+    assert "não permite alterações" in html or "não pode mais ser alterado" in html
+    assert "clearFormFields" in html
