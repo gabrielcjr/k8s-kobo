@@ -142,41 +142,45 @@ def test_api_submit_defaults_data_date(client):
     assert record["data_date"] is not None
     assert len(record["data_date"]) == 10  # YYYY-MM-DD
 
-def test_webform_dashboard_access_options(client):
+def test_webform_dashboard_and_backup_links_removed(client):
     """
-    Verify that the webform provides clear, visible options to access the dashboard
-    across multiple strategic places: top bar, header, drawer, and success modal.
-    """
-    res = client.get("/")
-    assert res.status_code == 200
-    html = res.text
-    
-    # 1. Top bar button
-    assert 'href="/dashboard"' in html
-    assert "topDashboardBtn" in html or "dashboard-top-btn" in html
-    
-    # 2. Drawer footer button
-    assert "drawerDashboardBtn" in html or "drawer-btn-dashboard" in html
-    
-    # 3. Success modal button
-    assert "modalDashboardBtn" in html
-
-def test_webform_blocks_editing_of_uploaded_records(client):
-    """
-    Verify that client-side logic strictly prevents editing records that have already been submitted (uploaded).
+    Verify that the webform has NO dashboard links or local backup export anywhere,
+    ensuring standard missionary users cannot access admin/dashboard or dump data.
     """
     res = client.get("/")
     assert res.status_code == 200
     html = res.text
+    
+    # 1. No dashboard or admin links
+    assert 'href="/dashboard"' not in html
+    assert 'href="/admin"' not in html
+    assert "topDashboardBtn" not in html
+    assert "drawerDashboardBtn" not in html
+    assert "modalDashboardBtn" not in html
+    assert "dashboard-top-btn" not in html
+    assert "Ver Painel" not in html
+    
+    # 2. No local backup export button
+    assert "exportBackupJson" not in html
+    assert "Exportar Backup" not in html
 
-    # Verify queue list locks uploaded items
-    assert "!isUploaded" in html
-    assert "Bloqueado" in html or "Enviado" in html
+def test_webform_submitted_records_purged_for_security(client):
+    """
+    Verify that once submitted, records are purged from device storage for information security.
+    Only drafts and queued offline records are retained.
+    """
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+
+    # Storage filter only keeps draft and queued
+    assert 'r.status === "draft" || r.status === "queued"' in html
     
-    # Verify loadRecordToEdit guards against uploaded status
-    assert 'item.status === "uploaded"' in html
-    assert "não pode mais ser editado" in html
+    # Successful submission purges record from client storage
+    assert "remainingRecords = getRecords().filter(r => r.id !== recordId)" in html
+    assert "deleteRecord(id)" in html
     
-    # Verify saveAsDraft and submit guard against uploaded status
-    assert "não permite alterações" in html or "não pode mais ser alterado" in html
-    assert "clearFormFields" in html
+    # Security message in queue drawer
+    assert "segurança da informação" in html
+
+

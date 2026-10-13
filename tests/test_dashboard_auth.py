@@ -52,3 +52,23 @@ def test_admin_alias_authenticated_success(client, valid_auth_headers):
     assert res.status_code == 200
     assert "text/html" in res.headers["content-type"]
     assert "Missionários Renova-me" in res.text
+
+def test_api_dashboard_live(client, valid_auth_headers):
+    """
+    Verify /api/dashboard/live requires authentication and returns dynamic live data
+    (total, stats, submissions, timestamp) for the real-time auto-updating dashboard.
+    """
+    # Unauthenticated rejected
+    res_unauth = client.get("/api/dashboard/live")
+    assert res_unauth.status_code == 401
+
+    # Authenticated success
+    res = client.get("/api/dashboard/live", headers=valid_auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "total" in data
+    assert "stats" in data
+    assert "submissions" in data
+    assert "timestamp" in data
+    assert isinstance(data["submissions"], list)
+

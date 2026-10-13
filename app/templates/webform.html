@@ -66,29 +66,6 @@
       gap: 8px;
     }
 
-    .dashboard-top-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #ffffff;
-      color: #0f172a;
-      border: 1px solid var(--border);
-      padding: 8px 14px;
-      border-radius: 30px;
-      font-size: 0.84rem;
-      font-weight: 700;
-      text-decoration: none;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.2s;
-    }
-
-    .dashboard-top-btn:hover {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
-      transform: translateY(-1px);
-      color: var(--primary);
-    }
-
     .queue-toggle-btn {
       display: inline-flex;
       align-items: center;
@@ -614,28 +591,6 @@
       gap: 10px;
     }
 
-    .drawer-btn-dashboard {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px;
-      background: #0f172a;
-      color: #ffffff;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.88rem;
-      text-decoration: none;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
-      transition: all 0.2s;
-    }
-
-    .drawer-btn-dashboard:hover {
-      background: #1e293b;
-      transform: translateY(-1px);
-    }
-
     .drawer-btn-primary {
       width: 100%;
       padding: 13px;
@@ -769,16 +724,12 @@
 </head>
 <body>
 
-  <!-- Top Bar with Dashboard Link and Queue Toggle -->
+  <!-- Top Bar with Queue Toggle -->
   <div class="top-bar">
     <div id="connStatus" class="status-badge online">
       <span class="dot"></span> Online (Conectado)
     </div>
     <div class="top-actions">
-      <a href="/dashboard" class="dashboard-top-btn" id="topDashboardBtn" title="Acessar o Painel de Controle">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        Painel / Dashboard
-      </a>
       <button type="button" class="queue-toggle-btn" onclick="openDrawer()">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h5v2H4v-2z"/></svg>
         Fila <span class="queue-badge" id="queueBadge">0</span>
@@ -792,19 +743,14 @@
 
   <div class="container">
     <div class="form-header">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
-        <div>
-          <h1>Missionários Renova-me</h1>
-          <p>Igreja Renova-me — Ficha de Cadastro & Coleta Missionária</p>
-          <div id="actionBanner" style="display:none;margin-top:6px;">
-            <span style="background:#eff6ff;color:#1e40af;font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:700;border:1px solid #bfdbfe;display:inline-flex;align-items:center;gap:4px;">
-              📍 <span id="actionBannerText">Ação: Cruz das Almas — Centro</span>
-            </span>
-          </div>
+      <div>
+        <h1>Missionários Renova-me</h1>
+        <p>Igreja Renova-me — Ficha de Cadastro & Coleta Missionária</p>
+        <div id="actionBanner" style="display:none;margin-top:6px;">
+          <span style="background:#eff6ff;color:#1e40af;font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:700;border:1px solid #bfdbfe;display:inline-flex;align-items:center;gap:4px;">
+            📍 <span id="actionBannerText">Ação: Cruz das Almas — Centro</span>
+          </span>
         </div>
-        <a href="/dashboard" class="dashboard-top-btn" style="font-size:0.8rem;padding:6px 12px;background:#f8fafc;">
-          📊 Ver Painel
-        </a>
       </div>
     </div>
 
@@ -928,7 +874,7 @@
     </form>
 
     <div class="footer">
-      Servidor Missionário Renova-me &bull; <a href="/dashboard">Acessar Painel</a>
+      Igreja Renova-me &bull; Ficha de Coleta Missionária
     </div>
   </div>
 
@@ -938,7 +884,7 @@
     <div class="drawer-header">
       <h2>
         <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h5v2H4v-2z"/></svg>
-        Fila de Registros
+        Fila & Rascunhos
       </h2>
       <button class="drawer-close-btn" onclick="closeDrawer()">&times;</button>
     </div>
@@ -946,7 +892,7 @@
     <div class="drawer-content">
       <div class="queue-info">
         <strong>Armazenamento Local (Offline):</strong><br>
-        Os registros ficam salvos com segurança no aparelho mesmo sem internet. Os itens marcados para envio são transmitidos automaticamente assim que a conexão retornar.
+        Contém apenas rascunhos e fichas pendentes de envio salvas no aparelho. Por segurança da informação, fichas já transmitidas com sucesso não permanecem no dispositivo.
       </div>
 
       <div class="queue-list" id="queueList">
@@ -958,15 +904,8 @@
       <button type="button" class="drawer-btn-primary" id="uploadQueueBtn" onclick="manualUploadQueue()">
         Enviar Registros da Fila Agora
       </button>
-      <a href="/dashboard" class="drawer-btn-dashboard" id="drawerDashboardBtn">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        Acessar Painel de Controle (Dashboard)
-      </a>
-      <button type="button" class="drawer-btn-secondary" onclick="exportBackupJson()">
-        Exportar Backup Local (JSON)
-      </button>
-      <button type="button" class="drawer-btn-secondary" onclick="clearUploadedRecords()" style="color:#ef4444;border-color:#fee2e2;">
-        Limpar Itens Já Enviados
+      <button type="button" class="drawer-btn-secondary" onclick="closeDrawer()">
+        Fechar Fila
       </button>
     </div>
   </aside>
@@ -978,10 +917,6 @@
       <h2 id="successTitle">Ficha Enviada com Sucesso!</h2>
       <p id="successDesc">A ficha de cadastro foi registrada e salva no servidor da Igreja Renova-me.</p>
       <button class="submit-btn" onclick="resetForm()">Cadastrar Outra Pessoa</button>
-      <a href="/dashboard" class="btn-secondary" id="modalDashboardBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#0f172a;color:#ffffff;font-weight:700;">
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        Acessar Painel de Controle (Dashboard)
-      </a>
     </div>
   </div>
 
@@ -1011,14 +946,18 @@
 
     function getRecords() {
       try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        // Por segurança da informação, manter no aparelho estritamente rascunhos e pendentes de envio
+        return parsed.filter(r => r && (r.status === "draft" || r.status === "queued"));
       } catch (e) {
         return [];
       }
     }
 
     function saveRecords(records) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      // Filtrar para nunca persistir itens que já foram enviados
+      const safeRecords = (records || []).filter(r => r && (r.status === "draft" || r.status === "queued"));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(safeRecords));
       updateQueueUI();
     }
 
@@ -1293,13 +1232,9 @@
           throw new Error("Servidor retornou status " + resp.status);
         }
 
-        // Mark as uploaded and lock from editing
-        const currentRecords = getRecords();
-        const item = currentRecords.find(r => r.id === recordId);
-        if (item) {
-          item.status = "uploaded";
-          saveRecords(currentRecords);
-        }
+        // Por segurança da informação, uma vez enviado ao servidor com sucesso, o registro não fica no aparelho
+        const remainingRecords = getRecords().filter(r => r.id !== recordId);
+        saveRecords(remainingRecords);
 
         cancelEditing();
         clearFormFields();
@@ -1384,7 +1319,12 @@
       const records = getRecords();
 
       if (records.length === 0) {
-        listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 10px;">Nenhum registro armazenado no aparelho.</div>';
+        listEl.innerHTML = `
+          <div style="text-align:center;color:var(--text-muted);padding:40px 16px;line-height:1.5;">
+            <svg width="36" height="36" fill="currentColor" viewBox="0 0 16 16" style="opacity:0.35;margin-bottom:10px;"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg><br>
+            <strong>Nenhum rascunho ou envio pendente.</strong><br>
+            <span style="font-size:0.8rem;">Fichas já enviadas com sucesso ao servidor não ficam salvas no aparelho por segurança da informação.</span>
+          </div>`;
         return;
       }
 
@@ -1392,12 +1332,9 @@
         const d = r.data || {};
         const title = d.nome ? d.nome : "<em>(Rascunho sem nome)</em>";
         const dateStr = new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + (d.data_date || '');
-        let chipLabel = "Rascunho";
-        let chipClass = "draft";
-        if (r.status === "queued") { chipLabel = "Pronto para Enviar"; chipClass = "queued"; }
-        if (r.status === "uploaded") { chipLabel = "Enviado ✓"; chipClass = "uploaded"; }
-
-        const isUploaded = r.status === "uploaded";
+        const isQueued = r.status === "queued";
+        const chipLabel = isQueued ? "Pendente de Envio (Offline)" : "Rascunho";
+        const chipClass = isQueued ? "queued" : "draft";
 
         return `
           <div class="queue-card">
@@ -1411,8 +1348,8 @@
               <span><strong>Missionário:</strong> ${d.missionario || '-'}</span>
             </div>
             <div class="queue-card-actions">
-              ${!isUploaded ? `<button type="button" class="queue-action-btn edit" onclick="loadRecordToEdit('${r.id}')">Editar</button>` : `<span class="queue-action-sent"><svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg> Enviado (Bloqueado)</span>`}
-              ${r.status === "queued" && navigator.onLine ? `<button type="button" class="queue-action-btn" onclick="uploadSingleRecord('${r.id}')">Enviar Agora</button>` : ''}
+              <button type="button" class="queue-action-btn edit" onclick="loadRecordToEdit('${r.id}')">Editar</button>
+              ${isQueued && navigator.onLine ? `<button type="button" class="queue-action-btn" onclick="uploadSingleRecord('${r.id}')">Enviar Agora</button>` : ''}
               <button type="button" class="queue-action-btn delete" onclick="deleteRecord('${r.id}')">Excluir</button>
             </div>
           </div>
@@ -1492,23 +1429,6 @@
       showToast("Registro removido.");
     }
 
-    function clearUploadedRecords() {
-      const records = getRecords().filter(r => r.status !== "uploaded");
-      saveRecords(records);
-      showToast("Registros já enviados foram removidos da memória local.");
-    }
-
-    function exportBackupJson() {
-      const records = getRecords();
-      const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `renovame_backup_offline_${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
     // --- 7. SYNC ENGINE (ENVIO DA FILA QUANDO ONLINE) ---
     async function syncPendingQueue(showNotification = true) {
       if (!navigator.onLine) return;
@@ -1522,6 +1442,7 @@
 
       console.log(`[AutoSync] Enviando ${queued.length} fichas pendentes da fila...`);
       let uploadedCount = 0;
+      const uploadedIds = new Set();
 
       for (const item of queued) {
         try {
@@ -1531,7 +1452,7 @@
             body: JSON.stringify(item.data)
           });
           if (resp.ok) {
-            item.status = "uploaded";
+            uploadedIds.add(item.id);
             uploadedCount++;
           }
         } catch (err) {
@@ -1540,13 +1461,12 @@
       }
 
       if (uploadedCount > 0) {
-        saveRecords(records);
-        if (currentEditingId) {
-          const cur = records.find(r => r.id === currentEditingId);
-          if (cur && cur.status === "uploaded") {
-            cancelEditing();
-            clearFormFields();
-          }
+        // Por segurança da informação, fichas já enviadas com sucesso ao servidor são removidas do aparelho
+        const remaining = getRecords().filter(r => !uploadedIds.has(r.id));
+        saveRecords(remaining);
+        if (currentEditingId && uploadedIds.has(currentEditingId)) {
+          cancelEditing();
+          clearFormFields();
         }
         showToast(`✓ ${uploadedCount} ficha(s) sincronizada(s) com sucesso!`);
       }
@@ -1581,8 +1501,9 @@
           body: JSON.stringify(item.data)
         });
         if (resp.ok) {
-          item.status = "uploaded";
-          saveRecords(records);
+          // Por segurança da informação, uma vez enviado ao servidor com sucesso, o registro não fica no aparelho
+          const remaining = getRecords().filter(r => r.id !== id);
+          saveRecords(remaining);
           if (currentEditingId === id) {
             cancelEditing();
             clearFormFields();

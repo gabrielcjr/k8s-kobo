@@ -403,6 +403,29 @@ def dashboard_page(request: Request, authorization: Optional[str] = Header(None)
         "active_acao": active_acao
     })
 
+@app.get("/api/dashboard/live")
+def get_dashboard_live(authorization: Optional[str] = Header(None)):
+    if not authorization or not check_credentials(authorization):
+        return Response(
+            content="Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"'}
+        )
+    submissions = get_all_submissions()
+    stats = get_stats()
+    return JSONResponse(
+        content={
+            "total": len(submissions),
+            "stats": stats,
+            "submissions": submissions,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Access-Control-Allow-Origin": "*"
+        }
+    )
+
 # --- EXPORTS: EXCEL (.xlsx), CSV, GEOJSON ---
 @app.get("/api/export/xlsx")
 def export_xlsx(authorization: Optional[str] = Header(None)):

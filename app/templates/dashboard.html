@@ -298,6 +298,38 @@
     .search-input:focus {
       border-color: var(--primary);
     }
+    .live-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #082819;
+      border: 1px solid #166534;
+      color: #86efac;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      animation: livePulse 1.8s infinite;
+    }
+    @keyframes livePulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(1.35); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .row-new-highlight {
+      animation: highlightFade 5s ease-out;
+    }
+    @keyframes highlightFade {
+      0% { background-color: rgba(34, 197, 94, 0.35); }
+      100% { background-color: transparent; }
+    }
   </style>
 </head>
 <body>
@@ -311,6 +343,10 @@
       </div>
     </a>
     <div class="nav-actions">
+      <div class="live-status-pill">
+        <span class="live-dot"></span>
+        <span id="liveStatusText">Ao Vivo • Atualização Automática</span>
+      </div>
       <a href="/api/export/xlsx" class="btn btn-success" download>
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
         Exportar Excel (.xlsx)
@@ -325,22 +361,22 @@
     <section class="kpi-grid">
       <div class="kpi-card">
         <span class="kpi-title">Total de Fichas Coletadas</span>
-        <span class="kpi-value">{{ stats.total }}</span>
+        <span class="kpi-value" id="kpiTotal">{{ stats.total }}</span>
         <span class="kpi-desc">Registros salvos no banco local</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Coletadas Hoje</span>
-        <span class="kpi-value" style="color:var(--blue);">{{ stats.today }}</span>
+        <span class="kpi-value" id="kpiToday" style="color:var(--blue);">{{ stats.today }}</span>
         <span class="kpi-desc">Novas coletas nas últimas 24h</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Decisão por Jesus: "Sim"</span>
-        <span class="kpi-value" style="color:var(--success);">{{ stats.jesus_stats.get("Sim", 0) }}</span>
+        <span class="kpi-value" id="kpiJesus" style="color:var(--success);">{{ stats.jesus_stats.get("Sim", 0) }}</span>
         <span class="kpi-desc">{{ stats.jesus_stats.get("evangelico", 0) }} já evangélicos &bull; {{ stats.jesus_stats.get("Vai decidir depois", 0) }} a decidir</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Missionários Ativos</span>
-        <span class="kpi-value" style="color:var(--warning);">{{ stats.top_missionaries|length }}</span>
+        <span class="kpi-value" id="kpiMissionaries" style="color:var(--warning);">{{ stats.top_missionaries|length }}</span>
         <span class="kpi-desc">Missionários enviando fichas</span>
       </div>
     </section>
@@ -486,7 +522,7 @@
     <!-- Submissions Table -->
     <section class="panel">
       <div class="panel-header">
-        <h2 class="panel-title">Fichas Missionárias Coletadas ({{ submissions|length }})</h2>
+        <h2 class="panel-title" id="tableTitle">Fichas Missionárias Coletadas ({{ submissions|length }})</h2>
         <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nome, telefone, missionário..." onkeyup="filterTable()">
       </div>
 
@@ -589,6 +625,117 @@
     } else {
       document.getElementById("pointsCount").innerText = `Aguardando primeiras coordenadas`;
     }
+
+    const knownIds = new Set(submissionsData.map(s => s.id));
+
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      const div = document.createElement('div');
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+
+    function formatJesusBadge(val) {
+      if (val === 'Sim') return '<span class="badge badge-sim">Sim</span>';
+      if (val === 'Não') return '<span class="badge badge-nao">Não</span>';
+      if (val === 'evangelico') return '<span class="badge badge-evang">É Evangélico(a)</span>';
+      return `<span class="badge badge-decidir">${escapeHtml(val || '-')}</span>`;
+    }
+
+    async function pollLiveUpdates() {
+      try {
+        const resp = await fetch('/api/dashboard/live', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data || !Array.isArray(data.submissions)) return;
+
+        // Verificar novos registros recebidos
+        const newItems = data.submissions.filter(s => !knownIds.has(s.id));
+        if (newItems.length > 0) {
+          newItems.sort((a, b) => a.id - b.id);
+          const tbody = document.querySelector("#submissionsTable tbody");
+
+          // Remover linha vazia se existir
+          const emptyRow = tbody.querySelector("td[colspan='10']");
+          if (emptyRow) emptyRow.closest("tr").remove();
+
+          for (const s of newItems) {
+            knownIds.add(s.id);
+            const tr = document.createElement("tr");
+            tr.className = "row-new-highlight";
+            tr.innerHTML = `
+              <td>${s.id}</td>
+              <td>${escapeHtml(s.data_date || (s.submission_time ? s.submission_time.substring(0, 10) : ''))}</td>
+              <td style="font-weight:700;">${escapeHtml(s.nome)}</td>
+              <td>${s.idade !== null && s.idade !== undefined ? s.idade : '-'}</td>
+              <td>
+                <a href="https://wa.me/55${s.telefone}" target="_blank" style="color:var(--blue);text-decoration:none;">
+                  ${escapeHtml(s.telefone)}
+                </a>
+              </td>
+              <td>${escapeHtml(s.genero || '')}</td>
+              <td>${formatJesusBadge(s.recebeu_jesus)}</td>
+              <td>${escapeHtml(s.endereco || '-')}</td>
+              <td style="font-weight:600;">${escapeHtml(s.missionario || '')}</td>
+              <td>
+                <span class="badge ${s.source === 'kobo_collect' ? 'badge-app' : 'badge-web'}">
+                  ${s.source === 'kobo_collect' ? 'KoBoCollect' : 'Web'}
+                </span>
+              </td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            if (s.latitude && s.longitude && s.latitude !== 0.0) {
+              const marker = L.marker([s.latitude, s.longitude]).addTo(map);
+              marker.bindPopup(`
+                <div style="font-family:sans-serif;color:#1e293b;padding:4px;">
+                  <strong style="font-size:1.05rem;">${escapeHtml(s.nome)}</strong><br>
+                  <span style="color:#64748b;">${escapeHtml(s.data_date || '')}</span><br>
+                  <strong>Telefone:</strong> ${escapeHtml(s.telefone)}<br>
+                  <strong>Recebeu Jesus:</strong> ${escapeHtml(s.recebeu_jesus)}<br>
+                  <strong>Missionário:</strong> ${escapeHtml(s.missionario)}<br>
+                  <em>${escapeHtml(s.endereco || '')}</em>
+                </div>
+              `);
+              markers.push(marker);
+            }
+          }
+
+          // Feedback visual no selo de status
+          const statusText = document.getElementById("liveStatusText");
+          if (statusText) {
+            statusText.innerText = `+${newItems.length} novo(s) registro(s) recebido(s)!`;
+            setTimeout(() => {
+              statusText.innerText = "Ao Vivo • Atualização Automática";
+            }, 5000);
+          }
+
+          filterTable();
+        }
+
+        // Atualizar KPIs
+        if (data.stats) {
+          const kTotal = document.getElementById("kpiTotal");
+          const kToday = document.getElementById("kpiToday");
+          const kJesus = document.getElementById("kpiJesus");
+          const kMissionaries = document.getElementById("kpiMissionaries");
+          const tTitle = document.getElementById("tableTitle");
+          const pCount = document.getElementById("pointsCount");
+
+          if (kTotal) kTotal.textContent = data.stats.total;
+          if (kToday) kToday.textContent = data.stats.today;
+          if (kJesus) kJesus.textContent = (data.stats.jesus_stats || {})["Sim"] || 0;
+          if (kMissionaries) kMissionaries.textContent = (data.stats.top_missionaries || []).length;
+          if (tTitle) tTitle.textContent = `Fichas Missionárias Coletadas (${data.total})`;
+          if (pCount) pCount.textContent = `${markers.length} pontos mapeados`;
+        }
+      } catch (err) {
+        // Silêncio em oscilação momentânea
+      }
+    }
+
+    // Iniciar atualização automática a cada 3 segundos (sem refresh de tela)
+    setInterval(pollLiveUpdates, 3000);
 
     function filterTable() {
       const input = document.getElementById("searchInput").value.toLowerCase();
