@@ -225,9 +225,28 @@ def test_excel_export_behavior(client, valid_auth_headers):
     ws = wb["Missionários Renova-me"]
     assert ws.max_row >= 2
     header_vals = [cell.value for cell in ws[1]]
-    assert "_id" in header_vals
-    assert "Nome" in header_vals
-    assert "Telefone" in header_vals
+    assert len(header_vals) == 16
+    assert header_vals[0] == "Data"
+    assert header_vals[1] == "Cidade"
+    assert header_vals[2] == "Povoado"
+    assert header_vals[3] == "Nome"
+    assert header_vals[4] == "Idade"
+    assert header_vals[5] == "Telefone"
+    assert header_vals[6] == "Whatsapp"
+    assert header_vals[7] == "Gênero"
+    assert header_vals[8] is None or header_vals[8] == ""  # Coluna I vazia (sem família)
+    assert header_vals[9] == "Recebeu a Jesus?"
+    assert header_vals[10] is None or header_vals[10] == ""  # Coluna K vazia (sem bíblia doada)
+    assert header_vals[11] == "Endereço ou referência"
+    assert header_vals[12] == "Observações"
+    assert header_vals[13] == "GeoLocalizador"
+    assert header_vals[14] == "Localizador"
+    assert header_vals[15] == "Missionário(a)"
+
+    row2_vals = [cell.value for cell in ws[2]]
+    assert len(row2_vals) == 16
+    assert "F2" in str(row2_vals[6])
+    assert "N2" in str(row2_vals[14])
 
 def test_campo_missionarios_csv_structure(client, valid_auth_headers):
     """
@@ -513,4 +532,91 @@ def test_export_csv_filtered_by_cidade(client, valid_auth_headers):
 
     assert "Missionário Itabuna Teste" in names_lbl
     assert "Missionário Ilhéus Teste" not in names_lbl
+
+
+def test_exact_16_columns_export_without_familia_and_biblia_doada(client, valid_auth_headers):
+    """
+    Verify exact 16 columns A..P in XLSX and CSV export:
+    - No familia or biblia_doada (columns I and K are empty)
+    - Column G: WhatsApp formula referencing F{row}
+    - Column N: GeoLocalizador format
+    - Column O: Mapa formula referencing N{row}
+    """
+    # 1. Insert test submission with geopoint
+    client.post("/api/submit", json={
+        "nome": "Jaqueline Teste 16 Cols",
+        "idade": 25,
+        "telefone": "75988466680",
+        "genero": "Feminino",
+        "recebeu_jesus": "Sim",
+        "endereco": "7 de setembro",
+        "geopoint": "-12.301113 -38.6409991 112.8 8.3",
+        "observacoes": "Teste 16 colunas",
+        "missionario": "Missionário Jaqueline",
+        "cidade": "Teodoro Sampaio",
+        "povoado": "Sede",
+        "data_date": "2025-07-15"
+    })
+
+    # 2. Check XLSX export
+    res_xlsx = client.get("/api/export/xlsx?search=Jaqueline+Teste+16+Cols", headers=valid_auth_headers)
+    assert res_xlsx.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(res_xlsx.content))
+    ws = wb.active
+    assert ws.max_row >= 2
+
+    # Headers verification
+    headers = [cell.value for cell in ws[1]]
+    assert len(headers) == 16
+    expected_headers = [
+        "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
+        "Gênero", None, "Recebeu a Jesus?", None, "Endereço ou referência",
+        "Observações", "GeoLocalizador", "Localizador", "Missionário(a)"
+    ]
+    for idx, exp in enumerate(expected_headers):
+        if exp is None:
+            assert headers[idx] is None or headers[idx] == ""
+        else:
+            assert headers[idx] == exp
+
+    # Row 2 data verification (first data row)
+    row2 = [cell.value for cell in ws[2]]
+    assert row2[0] == "07/2025"  # MM/YYYY
+    assert row2[1] == "Teodoro Sampaio"
+    assert row2[2] == "Sede"
+    assert row2[3] == "Jaqueline Teste 16 Cols"
+    assert row2[4] == 25
+    assert row2[5] == "75988466680"
+    # WhatsApp formula on column G referencing F2
+    assert '=IF(ISBLANK(F2); ""; IF(F2 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F2; "Chamar no WhatsApp")))' == row2[6]
+    assert row2[7] == "Feminino"
+    assert row2[8] is None or row2[8] == ""  # Coluna I vazia (sem família)
+    assert row2[9] == "Sim"
+    assert row2[10] is None or row2[10] == ""  # Coluna K vazia (sem bíblia doada)
+    assert row2[11] == "7 de setembro"
+    assert row2[12] == "Teste 16 colunas"
+    assert row2[13] == "[-12.301113,-38.6409991]"  # GeoLocalizador
+    # Map formula on column O referencing N2
+    assert '=IF(ISBLANK(N2); ""; IF(N2 = "[NULL,NULL]"; "Localização não capturada";IF(N2 = "[0.1,0.1]"; "Localização não capturada"; IF(N2 = "[1,1]"; "Localização não capturada"; IF(N2 = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N2; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))' == row2[14]
+    assert row2[15] == "Missionário Jaqueline"
+
+
+def test_dashboard_ui_clean_start_row_removed(client, valid_auth_headers):
+    """
+    Verify that the confusing inputStartRow field and instructions have been removed
+    from the dashboard HTML, providing a clean export experience.
+    """
+    res = client.get("/dashboard", headers=valid_auth_headers)
+    assert res.status_code == 200
+    html = res.text
+    # Confusing field and row 510 instruction removed
+    assert "inputStartRow" not in html
+    assert "PRÓXIMA LINHA VAZIA NA PLANILHA:" not in html
+    assert "helpStepRow" not in html
+    # Clean export panel exists
+    assert "Exportação e Integração com Planilhas" in html
+    assert "16 COLUNAS PADRONIZADAS (A..P)" in html
+    assert "btnPanelExportXlsx" in html
+    assert "btnPanelExportCsv" in html
+
 

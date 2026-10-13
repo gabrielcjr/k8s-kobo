@@ -664,99 +664,72 @@
       </div>
     </section>
 
-    <!-- Google Sheets Integration Panel: Copiar e Colar Seguro -->
+    <!-- Export and Google Sheets Integration Panel -->
     <section class="panel">
       <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
-          <h2 class="panel-title" style="margin:0;">Integração Segura com Google Planilhas (Copiar e Colar)</h2>
+          <h2 class="panel-title" style="margin:0;">Exportação e Integração com Planilhas (Excel / Google Planilhas)</h2>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:12px;letter-spacing:0.02em;">🔒 API ABERTA DESATIVADA POR SEGURANÇA</span>
-          <span style="background:#14532d;color:#86efac;border:1px solid #22c55e;font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:12px;">FLUXO SEGURO ATIVO</span>
+          <span style="background:#14532d;color:#86efac;border:1px solid #22c55e;font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:12px;">16 COLUNAS PADRONIZADAS (A..P)</span>
+          <span style="background:#0f172a;color:#93c5fd;border:1px solid #3b82f6;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:12px;">FÓRMULAS AUTOMÁTICAS</span>
         </div>
       </div>
 
       <div style="background:#0c1d1a;border:1px solid #166534;border-radius:12px;padding:18px;margin-bottom:16px;">
         <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.5;margin-bottom:14px;">
-          Por motivo de <strong>segurança dos dados</strong>, o acesso anônimo à API foi removido. Novos contatos são transferidos colando diretamente no Google Planilhas.
-          As 16 colunas A..P e as fórmulas exatas de <strong>WhatsApp</strong> e <strong>Google Maps</strong> são calculadas e formatadas automaticamente.
+          Exporte ou copie os dados coletados diretamente para o <strong>Google Planilhas</strong> ou <strong>Excel</strong>.
+          As 16 colunas oficiais A..P (com link de <strong>WhatsApp</strong> na coluna G e <strong>Localizador no Google Maps</strong> na coluna O) são calculadas e formatadas automaticamente, respeitando os filtros selecionados no painel.
         </p>
 
-        <!-- Configuração de Linha e Ação -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)) auto;gap:12px;align-items:flex-end;margin-bottom:16px;background:#06231b;border:1px solid #059669;border-radius:10px;padding:14px;">
-          <div>
-            <label style="font-size:0.78rem;color:#86efac;font-weight:800;display:block;margin-bottom:5px;">
-              📍 PRÓXIMA LINHA VAZIA NA PLANILHA:
-            </label>
-            <input type="number" id="inputStartRow" value="510" min="2" oninput="updateFormulaPreviews()" style="width:100%;background:#0f172a;border:1px solid #22c55e;color:#86efac;padding:8px 12px;border-radius:6px;font-size:0.95rem;font-weight:800;">
-            <span style="font-size:0.72rem;color:#94a3b8;display:block;margin-top:3px;">Ex: 510. Atualiza referências F e N das fórmulas.</span>
-          </div>
+        <!-- Configuração de Ação da Missão -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) auto;gap:12px;align-items:flex-end;margin-bottom:16px;background:#06231b;border:1px solid #059669;border-radius:10px;padding:14px;">
           <div>
             <label style="font-size:0.78rem;color:#86efac;font-weight:700;display:block;margin-bottom:5px;">
               CIDADE DA AÇÃO:
             </label>
-            <input type="text" id="inputCidade" value="{{ active_cidade or 'Cruz das Almas' }}" oninput="updateFormulaPreviews()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
+            <input type="text" id="inputCidade" value="{{ active_cidade or 'Teodoro Sampaio' }}" oninput="updateActionLink()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
           </div>
           <div>
             <label style="font-size:0.78rem;color:#86efac;font-weight:700;display:block;margin-bottom:5px;">
               POVOADO / BAIRRO:
             </label>
-            <input type="text" id="inputPovoado" value="{{ active_povoado or 'Centro' }}" oninput="updateFormulaPreviews()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
+            <input type="text" id="inputPovoado" value="{{ active_povoado or 'Sede' }}" oninput="updateActionLink()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
           </div>
           <div>
             <button class="btn btn-outline" onclick="saveServerAction()" id="btnSaveAction" style="white-space:nowrap;padding:9px 14px;font-size:0.82rem;height:38px;">💾 Salvar Ação</button>
           </div>
         </div>
 
-        <!-- Botões de Ação para Copiar -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
-          <button class="btn btn-success" onclick="copyFilteredToSheets()" style="padding:10px 20px;font-size:0.9rem;">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        <!-- Botões de Ação para Exportação e Cópia -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+          <a href="/api/export/xlsx" class="btn btn-success" id="btnPanelExportXlsx" download style="padding:10px 18px;font-size:0.88rem;">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+            📊 Baixar Excel (.xlsx)
+          </a>
+          <a href="/campo-missionarios.csv" class="btn btn-outline" id="btnPanelExportCsv" download style="padding:10px 16px;font-size:0.88rem;">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+            📄 Baixar CSV (.csv)
+          </a>
+          <button class="btn btn-primary" onclick="copyFilteredToSheets()" style="padding:10px 18px;font-size:0.88rem;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
             📋 Copiar Registros Filtrados (<span id="copyFilteredCount">{{ submissions|length }}</span>)
           </button>
-          <button class="btn btn-outline" onclick="copyTodayToSheets()" style="padding:10px 18px;font-size:0.9rem;">
+          <button class="btn btn-outline" onclick="copyTodayToSheets()" style="padding:10px 16px;font-size:0.88rem;">
             📅 Copiar Fichas de Hoje (<span id="copyTodayCount">{{ stats.today }}</span>)
           </button>
-          <button class="btn btn-outline" onclick="openTsvPreviewModal()" style="padding:10px 16px;font-size:0.88rem;">
+          <button class="btn btn-outline" onclick="openTsvPreviewModal()" style="padding:10px 14px;font-size:0.88rem;">
             👁️ Visualizar TSV (Texto Puro)
           </button>
           <div style="margin-left:auto;font-size:0.8rem;color:#cbd5e1;">
             📲 <strong>Link da Ação p/ Missionários:</strong>
-            <code id="linkMissionario" style="color:#38bdf8;margin-left:6px;">{{ base_url }}/?cidade={{ active_cidade or 'Cruz das Almas' }}&povoado={{ active_povoado or 'Centro' }}</code>
+            <code id="linkMissionario" style="color:#38bdf8;margin-left:6px;">{{ base_url }}/?cidade={{ active_cidade or 'Teodoro Sampaio' }}&povoado={{ active_povoado or 'Sede' }}</code>
           </div>
         </div>
 
-        <!-- Cards das Fórmulas Exatas -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:12px;margin-bottom:14px;">
-          <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-size:0.75rem;font-weight:800;color:#38bdf8;text-transform:uppercase;">Coluna G • Fórmula de WhatsApp:</span>
-              <button class="btn btn-outline" onclick="copyFormula('previewWaFormula')" style="padding:2px 8px;font-size:0.72rem;">Copiar</button>
-            </div>
-            <code id="previewWaFormula" style="font-size:0.78rem;color:#86efac;display:block;word-break:break-all;line-height:1.4;">
-              =IF(ISBLANK(F510); ""; IF(F510 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F510; "Chamar no WhatsApp")))
-            </code>
-          </div>
-
-          <div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-size:0.75rem;font-weight:800;color:#38bdf8;text-transform:uppercase;">Coluna O • Fórmula do Mapa:</span>
-              <button class="btn btn-outline" onclick="copyFormula('previewMapFormula')" style="padding:2px 8px;font-size:0.72rem;">Copiar</button>
-            </div>
-            <code id="previewMapFormula" style="font-size:0.73rem;color:#93c5fd;display:block;word-break:break-all;line-height:1.4;">
-              =IF(ISBLANK(N510); ""; IF(N510 = "[NULL,NULL]"; "Localização não capturada";IF(N510 = "[0.1,0.1]"; "Localização não capturada"; IF(N510 = "[1,1]"; "Localização não capturada"; IF(N510 = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N510; "-?\d+\.\d+,-?\d+\.\d+"); "Ver no mapa"))))))
-            </code>
-          </div>
-        </div>
-
-        <!-- Passo a Passo -->
-        <div style="background:#071421;border:1px solid #1e293b;border-radius:8px;padding:12px 16px;font-size:0.83rem;color:#94a3b8;line-height:1.6;">
-          <strong style="color:#f8fafc;">Instruções para o Google Planilhas (Aba "Campo Missionários"):</strong><br>
-          1️⃣ Defina o número da <strong>Próxima Linha Vazia</strong> (ex: <span id="helpStepRow" style="color:#86efac;font-weight:700;">510</span>).<br>
-          2️⃣ Clique em <strong>"📋 Copiar Registros Filtrados"</strong> ou no botão <strong>"📋 Copiar"</strong> na linha da ficha na tabela.<br>
-          3️⃣ Abra sua planilha no Google Sheets, clique na célula <strong>A<span id="helpStepCell" style="color:#86efac;font-weight:700;">510</span></strong> (primeira coluna da linha vazia).<br>
-          4️⃣ Pressione <strong>Ctrl + V</strong> (Colar). As 16 colunas A..P serão inseridas automaticamente e as fórmulas de WhatsApp e Mapa funcionarão imediatamente!
+        <div style="background:#071421;border:1px solid #1e293b;border-radius:8px;padding:12px 16px;font-size:0.82rem;color:#94a3b8;line-height:1.6;">
+          💡 <strong>Como usar:</strong> Você pode clicar em <strong>Baixar Excel (.xlsx)</strong> para abrir o arquivo completo já formatado, ou clicar em <strong>Copiar Registros Filtrados</strong> e colar diretamente (Ctrl+V) no Google Planilhas. As 16 colunas A..P com as fórmulas de WhatsApp e Mapa estarão prontas e funcionando imediatamente!
         </div>
       </div>
     </section>
@@ -1302,6 +1275,17 @@
         lblCsv.textContent = isFilterActive ? `CSV (${filteredCount})` : 'CSV';
       }
 
+      const btnPanelXlsx = document.getElementById("btnPanelExportXlsx");
+      const btnPanelCsv = document.getElementById("btnPanelExportCsv");
+      if (btnPanelXlsx) {
+        btnPanelXlsx.href = xlsxUrl;
+        btnPanelXlsx.title = isFilterActive ? `Baixar Excel filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em Excel';
+      }
+      if (btnPanelCsv) {
+        btnPanelCsv.href = csvUrl;
+        btnPanelCsv.title = isFilterActive ? `Baixar CSV filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em CSV';
+      }
+
       const btnTableXlsx = document.getElementById("btnTableExportXlsx");
       const btnTableCsv = document.getElementById("btnTableExportCsv");
       const lblTableXlsx = document.getElementById("labelTableExportXlsx");
@@ -1634,26 +1618,9 @@
       }, 4000);
     }
 
-    function updateFormulaPreviews() {
-      const rowInput = document.getElementById("inputStartRow");
-      let row = parseInt(rowInput.value, 10);
-      if (isNaN(row) || row < 1) row = 510;
-
-      const waEl = document.getElementById("previewWaFormula");
-      if (waEl) {
-        waEl.innerText = `=IF(ISBLANK(F${row}); ""; IF(F${row} = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F${row}; "Chamar no WhatsApp")))`;
-      }
-      const mapEl = document.getElementById("previewMapFormula");
-      if (mapEl) {
-        mapEl.innerText = `=IF(ISBLANK(N${row}); ""; IF(N${row} = "[NULL,NULL]"; "Localização não capturada";IF(N${row} = "[0.1,0.1]"; "Localização não capturada"; IF(N${row} = "[1,1]"; "Localização não capturada"; IF(N${row} = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N${row}; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))`;
-      }
-      const stepRow = document.getElementById("helpStepRow");
-      if (stepRow) stepRow.innerText = row;
-      const stepCell = document.getElementById("helpStepCell");
-      if (stepCell) stepCell.innerText = row;
-
-      const rawC = (document.getElementById("inputCidade") ? document.getElementById("inputCidade").value : "Cruz das Almas").trim();
-      const rawP = (document.getElementById("inputPovoado") ? document.getElementById("inputPovoado").value : "Centro").trim();
+    function updateActionLink() {
+      const rawC = (document.getElementById("inputCidade") ? document.getElementById("inputCidade").value : "Teodoro Sampaio").trim();
+      const rawP = (document.getElementById("inputPovoado") ? document.getElementById("inputPovoado").value : "Sede").trim();
       const baseUrl = "{{ base_url }}";
       const linkEl = document.getElementById("linkMissionario");
       if (linkEl) {
@@ -1662,14 +1629,17 @@
     }
 
     function generateRowTsv(s, rowNum) {
+      let row = parseInt(rowNum, 10);
+      if (isNaN(row) || row < 2) row = 2;
+
       let dVal = s.data_date || (s.submission_time ? s.submission_time.substring(0, 10) : "");
       if (dVal && dVal.length >= 7 && dVal.includes("-")) {
         const parts = dVal.split("-");
         dVal = parts.length >= 2 ? `${parts[1]}/${parts[0]}` : dVal;
       }
 
-      const activeC = (document.getElementById("inputCidade") ? document.getElementById("inputCidade").value : "").trim() || "Cruz das Almas";
-      const activeP = (document.getElementById("inputPovoado") ? document.getElementById("inputPovoado").value : "").trim() || "Centro";
+      const activeC = (document.getElementById("inputCidade") ? document.getElementById("inputCidade").value : "").trim() || "Teodoro Sampaio";
+      const activeP = (document.getElementById("inputPovoado") ? document.getElementById("inputPovoado").value : "").trim() || "Sede";
 
       const rowCidade = (s.cidade || "").trim() || activeC;
       const rowPovoado = (s.povoado || "").trim() || activeP;
@@ -1679,8 +1649,8 @@
       const telDigits = telRaw.replace(/\D/g, "");
       const telVal = telDigits || telRaw;
 
-      // Fórmula exata WhatsApp
-      const waFormula = `=IF(ISBLANK(F${rowNum}); ""; IF(F${rowNum} = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F${rowNum}; "Chamar no WhatsApp")))`;
+      // Fórmula exata WhatsApp (Coluna G apontando para F{row})
+      const waFormula = `=IF(ISBLANK(F${row}); ""; IF(F${row} = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F${row}; "Chamar no WhatsApp")))`;
 
       const genero = s.genero || "";
       const recebeuJesus = s.recebeu_jesus || "";
@@ -1697,7 +1667,7 @@
         }
       }
 
-      const mapFormula = `=IF(ISBLANK(N${rowNum}); ""; IF(N${rowNum} = "[NULL,NULL]"; "Localização não capturada";IF(N${rowNum} = "[0.1,0.1]"; "Localização não capturada"; IF(N${rowNum} = "[1,1]"; "Localização não capturada"; IF(N${rowNum} = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N${rowNum}; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))`;
+      const mapFormula = `=IF(ISBLANK(N${row}); ""; IF(N${row} = "[NULL,NULL]"; "Localização não capturada";IF(N${row} = "[0.1,0.1]"; "Localização não capturada"; IF(N${row} = "[1,1]"; "Localização não capturada"; IF(N${row} = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N${row}; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))`;
       const missionario = (s.missionario || "").replace(/\t/g, " ").replace(/[\r\n]+/g, " ");
 
       const cols = [
@@ -1709,9 +1679,9 @@
         telVal,
         waFormula,
         genero,
-        "", // Coluna I (oculta)
+        "", // Coluna I (sem família)
         recebeuJesus,
-        "", // Coluna K (oculta)
+        "", // Coluna K (sem bíblia doada)
         endereco,
         observacoes,
         geoVal,
@@ -1728,18 +1698,11 @@
         return;
       }
 
-      const rowInput = document.getElementById("inputStartRow");
-      let startRow = parseInt(rowInput.value, 10);
-      if (isNaN(startRow) || startRow < 1) startRow = 510;
-
-      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, startRow + idx));
+      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, 2 + idx));
       const tsvText = tsvLines.join("\n");
 
       copyTextToClipboard(tsvText).then(() => {
-        const endRow = startRow + filtered.length - 1;
-        showToast(`✅ ${filtered.length} registro(s) copiado(s)! Linhas ${startRow} a ${endRow}. Cole na célula A${startRow} do Google Planilhas.`);
-        rowInput.value = endRow + 1;
-        updateFormulaPreviews();
+        showToast(`✅ ${filtered.length} registro(s) copiado(s)! Pronto para colar no Google Planilhas (Ctrl+V).`);
       }).catch(() => {
         prompt("Copie os dados abaixo (Ctrl+C):", tsvText);
       });
@@ -1756,18 +1719,11 @@
         return;
       }
 
-      const rowInput = document.getElementById("inputStartRow");
-      let startRow = parseInt(rowInput.value, 10);
-      if (isNaN(startRow) || startRow < 1) startRow = 510;
-
-      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, startRow + idx));
+      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, 2 + idx));
       const tsvText = tsvLines.join("\n");
 
       copyTextToClipboard(tsvText).then(() => {
-        const endRow = startRow + filtered.length - 1;
-        showToast(`✅ ${filtered.length} ficha(s) de hoje copiada(s)! Linhas ${startRow} a ${endRow}. Cole na célula A${startRow} da planilha.`);
-        rowInput.value = endRow + 1;
-        updateFormulaPreviews();
+        showToast(`✅ ${filtered.length} ficha(s) de hoje copiada(s)! Pronto para colar no Google Planilhas (Ctrl+V).`);
       }).catch(() => {
         prompt("Copie os dados abaixo (Ctrl+C):", tsvText);
       });
@@ -1775,21 +1731,18 @@
 
     function copySingleRowToSheets(id) {
       const numId = Number(id);
-      const s = submissionsData.find(item => Number(item.id) === numId);
+      const list = window.currentFilteredList || submissionsData;
+      const idx = list.findIndex(item => Number(item.id) === numId);
+      const s = idx >= 0 ? list[idx] : submissionsData.find(item => Number(item.id) === numId);
       if (!s) {
         showToast("Ficha não encontrada.", "error");
         return;
       }
 
-      const rowInput = document.getElementById("inputStartRow");
-      let row = parseInt(rowInput.value, 10);
-      if (isNaN(row) || row < 1) row = 510;
-
-      const line = generateRowTsv(s, row);
+      const rowNum = (idx >= 0 ? idx : 0) + 2;
+      const line = generateRowTsv(s, rowNum);
       copyTextToClipboard(line).then(() => {
-        showToast(`✅ Ficha de "${s.nome}" copiada para a linha ${row}! Cole na célula A${row} da planilha.`);
-        rowInput.value = row + 1;
-        updateFormulaPreviews();
+        showToast(`✅ Ficha de "${s.nome}" copiada! Pronto para colar no Google Planilhas.`);
       }).catch(() => {
         prompt("Copie os dados da linha (Ctrl+C):", line);
       });
@@ -1797,16 +1750,11 @@
 
     function openTsvPreviewModal() {
       const filtered = window.currentFilteredList || submissionsData;
-      const rowInput = document.getElementById("inputStartRow");
-      let startRow = parseInt(rowInput.value, 10);
-      if (isNaN(startRow) || startRow < 1) startRow = 510;
-
-      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, startRow + idx));
+      const tsvLines = filtered.map((s, idx) => generateRowTsv(s, 2 + idx));
       const tsvText = tsvLines.join("\n");
 
       document.getElementById("tsvPreviewText").value = tsvText;
-      const endRow = filtered.length > 0 ? (startRow + filtered.length - 1) : startRow;
-      document.getElementById("tsvPreviewSummary").innerText = `${filtered.length} registros formatados (Linhas ${startRow} a ${endRow})`;
+      document.getElementById("tsvPreviewSummary").innerText = `${filtered.length} registro(s) formatado(s) nas 16 colunas oficiais (A..P)`;
       document.getElementById("tsvModalBackdrop").classList.add("active");
     }
 

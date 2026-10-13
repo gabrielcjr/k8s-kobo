@@ -532,12 +532,9 @@ def export_xlsx(
     ws.title = "Missionários Renova-me"
 
     headers = [
-        "_id", "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Genero",
-        "Recebeu_a_Jesus", "Endereco_ou_referencia", "Geolocalizador",
-        "_Geolocalizador_latitude", "_Geolocalizador_longitude",
-        "_Geolocalizador_altitude", "_Geolocalizador_precision",
-        "Observacoes", "Nome_do_Mission_rio_a", "__version__",
-        "_submission_time", "_submitted_by", "_source", "_uuid"
+        "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
+        "Gênero", "", "Recebeu a Jesus?", "", "Endereço ou referência",
+        "Observações", "GeoLocalizador", "Localizador", "Missionário(a)"
     ]
 
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
@@ -551,30 +548,65 @@ def export_xlsx(
         cell.fill = header_fill
         cell.alignment = center_align
 
-    for s in submissions:
+    for idx, s in enumerate(submissions):
+        row_num = idx + 2
+
+        d_str = s.get("data_date") or ""
+        if d_str and len(d_str) >= 7 and "-" in d_str:
+            parts = d_str.split("-")
+            d_val = f"{parts[1]}/{parts[0]}" if len(parts) >= 2 else d_str
+        else:
+            d_val = d_str
+
+        tel = (s.get("telefone") or "").strip()
+        tel_digits = "".join(ch for ch in tel if ch.isdigit())
+        tel_val = tel_digits if tel_digits else (tel if tel else "")
+
+        wa_formula = (
+            f'=IF(ISBLANK(F{row_num}); ""; '
+            f'IF(F{row_num} = 0; "Telefone não informado"; '
+            f'HYPERLINK("https://wa.me/55" & F{row_num}; "Chamar no WhatsApp")))'
+        )
+
+        lat = s.get("latitude")
+        lon = s.get("longitude")
+        if lat is not None and lon is not None and (lat != 0.0 or lon != 0.0):
+            geo_val = f"[{lat},{lon}]"
+        else:
+            geo_val = "[NULL,NULL]"
+
+        map_formula = (
+            f'=IF(ISBLANK(N{row_num}); ""; '
+            f'IF(N{row_num} = "[NULL,NULL]"; "Localização não capturada";'
+            f'IF(N{row_num} = "[0.1,0.1]"; "Localização não capturada"; '
+            f'IF(N{row_num} = "[1,1]"; "Localização não capturada"; '
+            f'IF(N{row_num} = "[1,2]"; "Localização não capturada";'
+            f'HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N{row_num}; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))'
+        )
+
+        sub_cid = (s.get("cidade") or "").strip()
+        sub_pov = (s.get("povoado") or "").strip()
+
+        row_cidade = sub_cid or (cidade.strip() if cidade and cidade.strip() else "Teodoro Sampaio")
+        row_povoado = sub_pov or (povoado.strip() if povoado and povoado.strip() else "Sede")
+
         ws.append([
-            s["id"],
-            s["data_date"] or "",
-            s.get("cidade") or "",
-            s.get("povoado") or "",
-            s["nome"] or "",
-            s["idade"] if s["idade"] is not None else "",
-            s["telefone"] or "",
-            s["genero"] or "",
-            s["recebeu_jesus"] or "",
-            s["endereco"] or "",
-            s["geopoint"] or "",
-            s["latitude"] if s["latitude"] is not None else "",
-            s["longitude"] if s["longitude"] is not None else "",
-            s["altitude"] if s["altitude"] is not None else "",
-            s["precision"] if s["precision"] is not None else "",
-            s["observacoes"] or "",
-            s["missionario"] or "",
-            s["version"] or FORM_VERSION,
-            s["submission_time"] or "",
-            s["submitted_by"] or "renovamechurch",
-            s["source"] or "kobo_collect",
-            s["uuid"] or ""
+            d_val,
+            row_cidade,
+            row_povoado,
+            s.get("nome") or "",
+            s.get("idade") if s.get("idade") is not None else "",
+            tel_val,
+            wa_formula,
+            s.get("genero") or "",
+            "",  # Coluna I (sem família)
+            s.get("recebeu_jesus") or "",  # Coluna J
+            "",  # Coluna K (sem bíblia doada)
+            s.get("endereco") or "",  # Coluna L
+            s.get("observacoes") or "",  # Coluna M
+            geo_val,  # Coluna N (GeoLocalizador)
+            map_formula,  # Coluna O (Localizador)
+            s.get("missionario") or ""  # Coluna P
         ])
 
     # Auto-adjust column width
@@ -692,11 +724,11 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
 
 def format_campo_missionarios_csv(
     submissions,
-    cidade: str = "Cruz das Almas",
-    povoado: str = "Centro",
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
     date_format: str = "month_year",
     layout: str = "exact_16",
-    start_row: int = 510,
+    start_row: int = 2,
     formula_sep: str = ";",
     delimiter: str = ","
 ) -> str:
@@ -704,11 +736,10 @@ def format_campo_missionarios_csv(
     writer = csv.writer(buf, delimiter=delimiter)
 
     if layout == "exact_16":
-        # Estrutura de 16 colunas A..P para coincidir perfeitamente com a planilha onde I, K e N estão ocultas
         headers = [
             "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
             "Gênero", "", "Recebeu a Jesus?", "", "Endereço ou referência",
-            "Observações", "", "Localizador", "Missionário(a)"
+            "Observações", "GeoLocalizador", "Localizador", "Missionário(a)"
         ]
         writer.writerow(headers)
         for idx, s in enumerate(submissions):
@@ -757,15 +788,8 @@ def format_campo_missionarios_csv(
             sub_cid = (s.get("cidade") or "").strip()
             sub_pov = (s.get("povoado") or "").strip()
 
-            if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
-                row_cidade = cidade.strip()
-            else:
-                row_cidade = sub_cid or (cidade.strip() if cidade else "Cruz das Almas")
-
-            if povoado and povoado.strip() and povoado.strip() != "Centro":
-                row_povoado = povoado.strip()
-            else:
-                row_povoado = sub_pov or (povoado.strip() if povoado else "Centro")
+            row_cidade = (cidade.strip() if cidade and cidade.strip() else None) or sub_cid or "Teodoro Sampaio"
+            row_povoado = (povoado.strip() if povoado and povoado.strip() else None) or sub_pov or "Sede"
 
             writer.writerow([
                 d_val,
@@ -863,7 +887,7 @@ def format_campo_missionarios_tsv(
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
     date_format: str = "month_year",
-    start_row: int = 510,
+    start_row: int = 2,
     formula_sep: str = ";",
     include_headers: bool = False
 ) -> str:
@@ -872,7 +896,7 @@ def format_campo_missionarios_tsv(
         headers = [
             "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
             "Gênero", "", "Recebeu a Jesus?", "", "Endereço ou referência",
-            "Observações", "", "Localizador", "Missionário(a)"
+            "Observações", "GeoLocalizador", "Localizador", "Missionário(a)"
         ]
         lines.append("\t".join(headers))
 
@@ -1027,7 +1051,7 @@ def get_campo_missionarios_csv(
     data_date: Optional[str] = None,
     date_format: Optional[str] = "month_year",
     layout: Optional[str] = "exact_16",
-    start_row: Optional[int] = 510,
+    start_row: Optional[int] = 2,
     formula_sep: Optional[str] = ";",
     delimiter: Optional[str] = ",",
     authorization: Optional[str] = Header(None)
@@ -1057,11 +1081,11 @@ def get_campo_missionarios_csv(
         )
     csv_content = format_campo_missionarios_csv(
         submissions,
-        cidade=cidade or "Cruz das Almas",
-        povoado=povoado or "Centro",
+        cidade=cidade,
+        povoado=povoado,
         date_format=date_format or "month_year",
         layout=layout or "exact_16",
-        start_row=start_row or 510,
+        start_row=start_row or 2,
         formula_sep=formula_sep or ";",
         delimiter=delimiter or ","
     )
@@ -1082,7 +1106,7 @@ def get_campo_missionarios_csv(
 @app.get("/api/dashboard/copy-tsv")
 @app.head("/api/dashboard/copy-tsv")
 def get_dashboard_copy_tsv(
-    start_row: int = 510,
+    start_row: int = 2,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
     recebeu_jesus: Optional[str] = None,
@@ -1169,7 +1193,7 @@ def get_kobo_csv_endpoint(
     data_date: Optional[str] = None,
     date_format: Optional[str] = "month_year",
     layout: Optional[str] = "exact_16",
-    start_row: Optional[int] = 510,
+    start_row: Optional[int] = 2,
     formula_sep: Optional[str] = ";",
     delimiter: Optional[str] = ",",
     authorization: Optional[str] = Header(None)

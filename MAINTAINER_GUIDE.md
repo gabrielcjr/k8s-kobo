@@ -50,12 +50,12 @@ Ponto de entrada da aplicação FastAPI. Responsável por:
   * `GET /api/dashboard/submissions/{id}`: Consulta os dados de uma ficha individual (protegido por Basic Auth).
   * `PUT /api/dashboard/submissions/{id}`: Atualização de campos de uma ficha (nome, data, idade, telefone, decisão, cidade, povoado, coordenadas, etc.).
   * `DELETE /api/dashboard/submissions/{id}`: Exclusão permanente de uma ficha no SQLite.
-* **APIs de Integração e Exportação (Todas Protegidas por Autenticação):**
-  * `GET /api/dashboard/copy-tsv`: Exportação TSV das 16 colunas A..P para colar no Google Sheets com fórmulas calculadas.
-  * `GET /campo-missionarios.csv`: Exportação CSV no formato exato da planilha da igreja.
-  * `GET /data.csv`: Exportação CSV padrão KoBoToolbox.
-  * `GET /api/export/xlsx`: Gera planilha binária em formato Excel (.xlsx).
-  * `GET /api/export/geojson`: Exporta os pontos geográficos em formato GeoJSON para QGIS ou ArcGIS.
+* **APIs de Integração e Exportação Padronizadas (16 Colunas A..P):**
+  * `GET /api/export/xlsx`: Exportação Excel binária (.xlsx) no layout oficial de 16 colunas A..P, com fórmulas de WhatsApp e Mapa que referenciam dinamicamente `F{row}` e `N{row}` (`row = idx + 2`). Não inclui dados em Família (coluna I) ou Bíblia doada (coluna K). Respeita todos os filtros ativos (cidade, povoado, decisão, missionário, busca).
+  * `GET /campo-missionarios.csv`: Exportação CSV no layout oficial de 16 colunas A..P, compatível com importação direta no Google Sheets ou Excel.
+  * `GET /api/dashboard/copy-tsv`: Exportação em texto puro tabulado (TSV) das 16 colunas A..P para cópia e colagem direta no Google Planilhas.
+  * `GET /data.csv`: Exportação CSV do KoBoToolbox com suporte a rótulos legíveis (`labels=true`) e filtros.
+  * `GET /api/export/geojson`: Exporta os pontos geográficos em formato GeoJSON RFC 7946 para QGIS ou ArcGIS.
   * `GET /healthz`: Probe de liveness e readiness do Kubernetes.
 
 ### [`app/database.py`](file:///home/ubuntu/k8s_kobo/app/database.py)
