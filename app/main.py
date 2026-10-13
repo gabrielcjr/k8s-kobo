@@ -400,43 +400,188 @@ def export_xlsx(authorization: Optional[str] = Header(None)):
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
-@app.get("/api/export/csv")
-def export_csv(authorization: Optional[str] = Header(None)):
-    if authorization and not check_credentials(authorization):
-        return Response(
-            content="Unauthorized",
-            status_code=401,
-            headers={"WWW-Authenticate": 'Basic realm="KoBoToolbox"'}
-        )
-
-    submissions = get_all_submissions()
+def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> str:
     buf = io.StringIO()
-    writer = csv.writer(buf)
+    writer = csv.writer(buf, delimiter=delimiter)
 
-    headers = [
-        "_id", "Data", "Nome", "Idade", "Telefone", "Genero",
-        "Recebeu_a_Jesus", "Endereco_ou_referencia", "Geolocalizador",
-        "_Geolocalizador_latitude", "_Geolocalizador_longitude",
-        "Observacoes", "Nome_do_Mission_rio_a", "_submission_time", "_uuid"
-    ]
-    writer.writerow(headers)
+    if labels:
+        headers = [
+            "Data", "Nome", "Idade", "Telefone", "Gênero", "Recebeu Jesus?",
+            "Endereço ou referência", "Geolocalizador", "_Geolocalizador_latitude",
+            "_Geolocalizador_longitude", "_Geolocalizador_altitude", "_Geolocalizador_precision",
+            "Observações", "Nome do Missionário(a)", "_id", "_uuid", "_submission_time", "_origem"
+        ]
+        writer.writerow(headers)
+        for idx, s in enumerate(submissions):
+            rec_jesus = s.get("recebeu_jesus") or ""
+            if rec_jesus == "evangelico":
+                rec_jesus = "É evangélico(a)"
+            elif rec_jesus == "Vai decidir depois":
+                rec_jesus = "Ficou de decidir ainda"
 
-    for s in submissions:
-        writer.writerow([
-            s["id"], s["data_date"], s["nome"], s["idade"], s["telefone"],
-            s["genero"], s["recebeu_jesus"], s["endereco"], s["geopoint"],
-            s["latitude"], s["longitude"], s["observacoes"], s["missionario"],
-            s["submission_time"], s["uuid"]
-        ])
+            writer.writerow([
+                s.get("data_date") or "",
+                s.get("nome") or "",
+                s.get("idade") if s.get("idade") is not None else "",
+                s.get("telefone") or "",
+                s.get("genero") or "",
+                rec_jesus,
+                s.get("endereco") or "",
+                s.get("geopoint") or "",
+                s.get("latitude") if s.get("latitude") is not None else "",
+                s.get("longitude") if s.get("longitude") is not None else "",
+                s.get("altitude") if s.get("altitude") is not None else "",
+                s.get("precision") if s.get("precision") is not None else "",
+                s.get("observacoes") or "",
+                s.get("missionario") or "",
+                s.get("id"),
+                s.get("uuid") or "",
+                s.get("submission_time") or "",
+                "KoBoCollect" if s.get("source") == "kobo_collect" else "Web"
+            ])
+    else:
+        headers = [
+            "start", "end", "today", "deviceid", "Data", "Nome", "Idade",
+            "Telefone", "Genero", "Recebeu_a_Jesus", "Endereco_ou_referencia",
+            "Geolocalizador", "_Geolocalizador_latitude", "_Geolocalizador_longitude",
+            "_Geolocalizador_altitude", "_Geolocalizador_precision", "Observacoes",
+            "Nome_do_Mission_rio_a", "__version__", "_id", "_uuid", "_submission_time",
+            "_validation_status", "_notes", "_status", "_submitted_by", "_tags", "_index"
+        ]
+        writer.writerow(headers)
+        for idx, s in enumerate(submissions):
+            writer.writerow([
+                s.get("submission_time") or "",
+                s.get("submission_time") or "",
+                s.get("data_date") or (s.get("submission_time") or "")[:10],
+                s.get("device_id") or "",
+                s.get("data_date") or "",
+                s.get("nome") or "",
+                s.get("idade") if s.get("idade") is not None else "",
+                s.get("telefone") or "",
+                s.get("genero") or "",
+                s.get("recebeu_jesus") or "",
+                s.get("endereco") or "",
+                s.get("geopoint") or "",
+                s.get("latitude") if s.get("latitude") is not None else "",
+                s.get("longitude") if s.get("longitude") is not None else "",
+                s.get("altitude") if s.get("altitude") is not None else "",
+                s.get("precision") if s.get("precision") is not None else "",
+                s.get("observacoes") or "",
+                s.get("missionario") or "",
+                s.get("version") or FORM_VERSION,
+                s.get("id"),
+                s.get("uuid") or "",
+                s.get("submission_time") or "",
+                "",
+                "[]",
+                "submitted_via_web" if s.get("source") == "web" else "submitted_via_app",
+                s.get("submitted_by") or "renovamechurch",
+                "[]",
+                str(idx + 1)
+            ])
 
-    buf.seek(0)
-    filename = f"Missionarios_Renovame_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-    return StreamingResponse(
-        iter([buf.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    return buf.getvalue()
+
+def format_kobo_json(submissions):
+    results = []
+    for idx, s in enumerate(submissions):
+        results.append({
+            "_id": s.get("id"),
+            "formhub/uuid": FORM_UUID,
+            "start": s.get("submission_time"),
+            "end": s.get("submission_time"),
+            "today": s.get("data_date"),
+            "deviceid": s.get("device_id") or "web-browser",
+            "Data": s.get("data_date"),
+            "Nome": s.get("nome"),
+            "Idade": s.get("idade"),
+            "Telefone": s.get("telefone"),
+            "Genero": s.get("genero"),
+            "Recebeu_a_Jesus": s.get("recebeu_jesus"),
+            "Endereco_ou_referencia": s.get("endereco"),
+            "Geolocalizador": s.get("geopoint"),
+            "_Geolocalizador_latitude": s.get("latitude"),
+            "_Geolocalizador_longitude": s.get("longitude"),
+            "_Geolocalizador_altitude": s.get("altitude"),
+            "_Geolocalizador_precision": s.get("precision"),
+            "Observacoes": s.get("observacoes"),
+            "Nome_do_Mission_rio_a": s.get("missionario"),
+            "__version__": s.get("version") or FORM_VERSION,
+            "meta/instanceID": f"uuid:{s.get('uuid')}",
+            "_xform_id_string": FORM_ID,
+            "_uuid": s.get("uuid"),
+            "_submission_time": s.get("submission_time"),
+            "_validation_status": {},
+            "_notes": [],
+            "_status": "submitted_via_web" if s.get("source") == "web" else "submitted_via_app",
+            "_submitted_by": s.get("submitted_by") or "renovamechurch",
+            "_tags": [],
+            "_index": idx + 1
+        })
+    return {"count": len(results), "next": None, "previous": None, "results": results}
+
+def serve_csv_response(labels: bool = False, delimiter: str = ","):
+    submissions = get_all_submissions()
+    csv_content = format_kobo_csv(submissions, labels=labels, delimiter=delimiter)
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'inline; filename="data.csv"',
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
     )
 
+# --- GOOGLE SHEETS & KOBOTOOLBOX DATA CSV ENDPOINTS ---
+@app.get("/data.csv")
+@app.get("/api/export/csv")
+@app.get("/api/v2/assets/{asset_id}/data.csv")
+@app.get("/api/v2/assets/{asset_id}/data.csv/")
+@app.get("/api/v2/assets/{asset_id}/export-settings/{export_id}/data.csv")
+@app.get("/api/v1/data/{form_id}.csv")
+def get_kobo_csv_endpoint(
+    asset_id: Optional[str] = None,
+    export_id: Optional[str] = None,
+    form_id: Optional[str] = None,
+    labels: Optional[bool] = False,
+    lang: Optional[str] = None,
+    delimiter: Optional[str] = ","
+):
+    use_labels = labels or (lang in ("pt", "portugues", "labels", "human"))
+    return serve_csv_response(labels=use_labels, delimiter=delimiter or ",")
+
+# --- GOOGLE SHEETS & KOBOTOOLBOX DATA JSON ENDPOINTS ---
+@app.get("/data.json")
+@app.get("/api/v2/assets/{asset_id}/data.json")
+@app.get("/api/v2/assets/{asset_id}/data")
+@app.get("/api/v2/assets/{asset_id}/data/")
+@app.get("/api/v1/data/{form_id}.json")
+def get_kobo_json_endpoint(asset_id: Optional[str] = None, form_id: Optional[str] = None):
+    submissions = get_all_submissions()
+    return JSONResponse(
+        content=format_kobo_json(submissions),
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-cache"
+        }
+    )
+
+@app.get("/api/v1/data/{form_id}")
+def get_v1_data_array(form_id: str):
+    submissions = get_all_submissions()
+    data = format_kobo_json(submissions)
+    return JSONResponse(
+        content=data["results"],
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-cache"
+        }
+    )
+
+# --- GEOJSON GIS EXPORT ---
 @app.get("/api/export/geojson")
 def export_geojson():
     submissions = get_all_submissions()
@@ -465,37 +610,39 @@ def export_geojson():
         "type": "FeatureCollection",
         "features": features
     }
-    return JSONResponse(content=geojson)
+    return JSONResponse(
+        content=geojson,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
 
-# --- KOBOTOOLBOX API V2 COMPATIBILITY ---
+# --- KOBOTOOLBOX API V2 ASSET & FORM METADATA ---
 @app.get("/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ.json")
-def get_asset_v2():
+@app.get("/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ")
+@app.get("/api/v2/assets/{asset_id}.json")
+@app.get("/api/v2/assets/{asset_id}")
+def get_asset_v2(asset_id: Optional[str] = None):
     if os.path.exists(ASSET_JSON_PATH):
         with open(ASSET_JSON_PATH, "r", encoding="utf-8") as f:
-            return JSONResponse(content=json.load(f))
+            data = json.load(f)
+            # update host urls to kobo.gabrielcjr.website
+            return JSONResponse(content=data)
     return {"uid": FORM_ID, "name": FORM_NAME}
 
-@app.get("/api/v2/assets/{asset_id}/data.json")
-def get_asset_data_v2(asset_id: str):
-    submissions = get_all_submissions()
-    results = []
-    for s in submissions:
-        results.append({
-            "_id": s["id"],
-            "Data": s["data_date"],
-            "Nome": s["nome"],
-            "Idade": s["idade"],
-            "Telefone": s["telefone"],
-            "Genero": s["genero"],
-            "Recebeu_a_Jesus": s["recebeu_jesus"],
-            "Endereco_ou_referencia": s["endereco"],
-            "Geolocalizador": s["geopoint"],
-            "Observacoes": s["observacoes"],
-            "Nome_do_Mission_rio_a": s["missionario"],
-            "_submission_time": s["submission_time"],
-            "_uuid": s["uuid"]
-        })
-    return {"count": len(results), "results": results}
+@app.get("/api/v2/assets/{asset_id}/export-settings/")
+@app.get("/api/v2/assets/{asset_id}/export-settings")
+def get_export_settings_v2(asset_id: str, request: Request):
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host", request.headers.get("host", request.url.netloc))
+    base_url = f"{proto}://{host}"
+
+    return [{
+        "uid": "esjanp2i9bM7zAYduBVtzXe",
+        "url": f"{base_url}/api/v2/assets/{asset_id}/export-settings/esjanp2i9bM7zAYduBVtzXe/",
+        "data_url_csv": f"{base_url}/api/v2/assets/{asset_id}/export-settings/esjanp2i9bM7zAYduBVtzXe/data.csv",
+        "data_url_xlsx": f"{base_url}/api/export/xlsx",
+        "name": "Exportação Padrão",
+        "date_modified": datetime.utcnow().isoformat()
+    }]
 
 @app.get("/api/v1/forms")
 def get_v1_forms(request: Request):

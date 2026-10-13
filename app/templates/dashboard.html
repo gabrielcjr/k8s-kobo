@@ -393,6 +393,43 @@
       </div>
     </section>
 
+    <!-- Google Sheets Integration Panel -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#22c55e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
+          Integração com Google Planilhas (Google Sheets)
+        </h2>
+        <span style="font-size:0.8rem;color:var(--text-muted);">Sincronização via IMPORTDATA</span>
+      </div>
+      <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.5;">
+        Para baixar os dados automaticamente no Google Sheets (exatamente como no KoBoToolbox gratuito), basta colar a fórmula abaixo na célula <strong>A1</strong> da sua planilha:
+      </p>
+
+      <div class="setup-box">
+        <div class="setup-item">
+          <span class="setup-label">Fórmula Padrão KoBoToolbox (Estrutura Técnica XML / Export Oficial)</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="setup-code" id="formulaKobo" style="flex:1;">=IMPORTDATA("{{ base_url }}/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv")</span>
+            <button class="btn btn-outline" onclick="copyFormula('formulaKobo')" style="white-space:nowrap;">Copiar</button>
+          </div>
+        </div>
+
+        <div class="setup-item" style="margin-top:6px;">
+          <span class="setup-label">Fórmula com Títulos Amigáveis em Português</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="setup-code" id="formulaLabels" style="flex:1;color:#86efac;">=IMPORTDATA("{{ base_url }}/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv?labels=true")</span>
+            <button class="btn btn-outline" onclick="copyFormula('formulaLabels')" style="white-space:nowrap;">Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:0.83rem;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">
+        <span>💡 <strong>Atualização automática:</strong> O Google Sheets recalcula e busca os novos registros periodicamente.</span>
+        <span>📄 <strong>URLs compatíveis:</strong> <code>{{ base_url }}/data.csv</code> ou <code>{{ base_url }}/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ.csv</code></span>
+      </div>
+    </section>
+
     <!-- Submissions Table -->
     <section class="panel">
       <div class="panel-header">
@@ -463,15 +500,16 @@
     </section>
   </main>
 
+  <script id="submissionsJson" type="application/json">{{ submissions | tojson | safe }}</script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Initialize map
-    const map = L.map('map').setView([-12.257, -38.963], 13); // Default Bahia/Feira de Santana center
+    const map = L.map('map').setView([-12.257, -38.963], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    const submissionsData = {{ submissions | tojson }};
+    const submissionsData = JSON.parse(document.getElementById('submissionsJson').textContent || '[]');
     const markers = [];
 
     submissionsData.forEach(s => {
@@ -505,6 +543,16 @@
       rows.forEach(r => {
         const text = r.innerText.toLowerCase();
         r.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+
+    function copyFormula(id) {
+      const el = document.getElementById(id);
+      const text = el.innerText || el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Fórmula copiada! Cole na célula A1 do Google Planilhas.");
+      }).catch(() => {
+        prompt("Copie a fórmula:", text);
       });
     }
   </script>
