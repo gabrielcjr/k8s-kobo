@@ -284,16 +284,66 @@
     .badge-decidir { background: #854d0e; color: #fde047; }
     .badge-app { background: #3730a3; color: #c7d2fe; }
     .badge-web { background: #1e293b; color: #94a3b8; border: 1px solid #475569; }
+    .badge-cidade { background: #1e3a8a; color: #bfdbfe; border: 1px solid #2563eb; font-weight: 600; }
+    .badge-povoado { background: #312e81; color: #c7d2fe; border: 1px solid #4f46e5; font-weight: 600; }
+
+    /* Filters Bar */
+    .filters-container {
+      background: #0f172a;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .filter-label {
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .filter-select {
+      background: #1e293b;
+      border: 1px solid var(--surface-border);
+      color: #fff;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    .filter-select:focus {
+      border-color: var(--primary);
+    }
 
     .search-input {
-      background: #0f172a;
+      background: #1e293b;
       border: 1px solid var(--surface-border);
       color: #fff;
       padding: 9px 14px;
       border-radius: 8px;
       font-size: 0.88rem;
       outline: none;
-      width: 280px;
+      width: 100%;
     }
     .search-input:focus {
       border-color: var(--primary);
@@ -362,22 +412,22 @@
       <div class="kpi-card">
         <span class="kpi-title">Total de Fichas Coletadas</span>
         <span class="kpi-value" id="kpiTotal">{{ stats.total }}</span>
-        <span class="kpi-desc">Registros salvos no banco local</span>
+        <span class="kpi-desc" id="kpiTotalDesc">Registros salvos no banco local</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Coletadas Hoje</span>
         <span class="kpi-value" id="kpiToday" style="color:var(--blue);">{{ stats.today }}</span>
-        <span class="kpi-desc">Novas coletas nas últimas 24h</span>
+        <span class="kpi-desc" id="kpiTodayDesc">Novas coletas nas últimas 24h</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Decisão por Jesus: "Sim"</span>
         <span class="kpi-value" id="kpiJesus" style="color:var(--success);">{{ stats.jesus_stats.get("Sim", 0) }}</span>
-        <span class="kpi-desc">{{ stats.jesus_stats.get("evangelico", 0) }} já evangélicos &bull; {{ stats.jesus_stats.get("Vai decidir depois", 0) }} a decidir</span>
+        <span class="kpi-desc" id="kpiJesusDesc">{{ stats.jesus_stats.get("evangelico", 0) }} já evangélicos &bull; {{ stats.jesus_stats.get("Vai decidir depois", 0) }} a decidir</span>
       </div>
       <div class="kpi-card">
         <span class="kpi-title">Missionários Ativos</span>
         <span class="kpi-value" id="kpiMissionaries" style="color:var(--warning);">{{ stats.top_missionaries|length }}</span>
-        <span class="kpi-desc">Missionários enviando fichas</span>
+        <span class="kpi-desc" id="kpiMissionariesDesc">Missionários enviando fichas</span>
       </div>
     </section>
 
@@ -523,7 +573,66 @@
     <section class="panel">
       <div class="panel-header">
         <h2 class="panel-title" id="tableTitle">Fichas Missionárias Coletadas ({{ submissions|length }})</h2>
-        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nome, telefone, missionário..." onkeyup="filterTable()">
+      </div>
+
+      <!-- Filtros Dinâmicos -->
+      <div class="filters-container">
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label class="filter-label" for="filterCidade">Cidade</label>
+            <select id="filterCidade" class="filter-select" onchange="applyFilters()">
+              <option value="">Todas as Cidades</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterPovoado">Povoado / Bairro</label>
+            <select id="filterPovoado" class="filter-select" onchange="applyFilters()">
+              <option value="">Todos os Povoados</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterJesus">Decisão (Jesus)</label>
+            <select id="filterJesus" class="filter-select" onchange="applyFilters()">
+              <option value="">Todas as Decisões</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+              <option value="evangelico">É Evangélico(a)</option>
+              <option value="Vai decidir depois">Vai decidir depois</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterMissionario">Missionário(a)</label>
+            <select id="filterMissionario" class="filter-select" onchange="applyFilters()">
+              <option value="">Todos os Missionários</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterGenero">Gênero</label>
+            <select id="filterGenero" class="filter-select" onchange="applyFilters()">
+              <option value="">Todos os Gêneros</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+          </div>
+          <div class="filter-group" style="min-width:200px;">
+            <label class="filter-label" for="searchInput">Busca Geral</label>
+            <input type="text" id="searchInput" class="search-input" placeholder="Nome, telefone, endereço..." oninput="applyFilters()">
+          </div>
+          <div class="filter-group">
+            <button type="button" class="btn btn-outline" onclick="resetFilters()" style="width:100%;justify-content:center;padding:9px 12px;">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+              Limpar Filtros
+            </button>
+          </div>
+        </div>
+
+        <div id="filterStatusRow" style="display:none;margin-top:4px;padding:8px 12px;background:#0c1929;border:1px solid #1e3a5f;border-radius:8px;font-size:0.83rem;color:#93c5fd;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;">🔍 Filtro Ativo:</span>
+            <span id="filterSummaryText">Exibindo registros filtrados</span>
+          </div>
+          <span id="filterCountBadge" style="background:#1d4ed8;color:#eff6ff;padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;"></span>
+        </div>
       </div>
 
       <div class="table-container">
@@ -532,6 +641,8 @@
             <tr>
               <th>#</th>
               <th>Data</th>
+              <th>Cidade</th>
+              <th>Povoado</th>
               <th>Nome</th>
               <th>Idade</th>
               <th>Telefone</th>
@@ -544,9 +655,11 @@
           </thead>
           <tbody>
             {% for s in submissions %}
-            <tr>
+            <tr data-id="{{ s.id }}">
               <td>{{ s.id }}</td>
               <td>{{ s.data_date or s.submission_time[:10] }}</td>
+              <td><span class="badge badge-cidade">{{ s.cidade or '-' }}</span></td>
+              <td><span class="badge badge-povoado">{{ s.povoado or '-' }}</span></td>
               <td style="font-weight:700;">{{ s.nome }}</td>
               <td>{{ s.idade if s.idade is not none else '-' }}</td>
               <td>
@@ -577,8 +690,8 @@
               </td>
             </tr>
             {% else %}
-            <tr>
-              <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
+            <tr id="emptyTableRow">
+              <td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted);">
                 Nenhuma ficha coletada ainda. Utilize o aplicativo KoBoCollect ou o formulário web para registrar o primeiro contato!
               </td>
             </tr>
@@ -598,34 +711,8 @@
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    const submissionsData = JSON.parse(document.getElementById('submissionsJson').textContent || '[]');
-    const markers = [];
-
-    submissionsData.forEach(s => {
-      if (s.latitude && s.longitude && s.latitude !== 0.0) {
-        const marker = L.marker([s.latitude, s.longitude]).addTo(map);
-        marker.bindPopup(`
-          <div style="font-family:sans-serif;color:#1e293b;padding:4px;">
-            <strong style="font-size:1.05rem;">${s.nome}</strong><br>
-            <span style="color:#64748b;">${s.data_date || ''}</span><br>
-            <strong>Telefone:</strong> ${s.telefone}<br>
-            <strong>Recebeu Jesus:</strong> ${s.recebeu_jesus}<br>
-            <strong>Missionário:</strong> ${s.missionario}<br>
-            <em>${s.endereco || ''}</em>
-          </div>
-        `);
-        markers.push(marker);
-      }
-    });
-
-    if (markers.length > 0) {
-      const group = new L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.15));
-      document.getElementById("pointsCount").innerText = `${markers.length} pontos mapeados`;
-    } else {
-      document.getElementById("pointsCount").innerText = `Aguardando primeiras coordenadas`;
-    }
-
+    let submissionsData = JSON.parse(document.getElementById('submissionsJson').textContent || '[]');
+    const markersMap = new Map();
     const knownIds = new Set(submissionsData.map(s => s.id));
 
     function escapeHtml(text) {
@@ -642,6 +729,211 @@
       return `<span class="badge badge-decidir">${escapeHtml(val || '-')}</span>`;
     }
 
+    function createMarkerForSubmission(s) {
+      if (s.latitude && s.longitude && s.latitude !== 0.0) {
+        const marker = L.marker([s.latitude, s.longitude]);
+        marker.bindPopup(`
+          <div style="font-family:sans-serif;color:#1e293b;padding:4px;">
+            <strong style="font-size:1.05rem;">${escapeHtml(s.nome)}</strong><br>
+            <span style="color:#64748b;">${escapeHtml(s.data_date || '')}</span><br>
+            <strong>Cidade / Povoado:</strong> ${escapeHtml(s.cidade || '')} - ${escapeHtml(s.povoado || '')}<br>
+            <strong>Telefone:</strong> ${escapeHtml(s.telefone)}<br>
+            <strong>Recebeu Jesus:</strong> ${escapeHtml(s.recebeu_jesus)}<br>
+            <strong>Missionário:</strong> ${escapeHtml(s.missionario)}<br>
+            <em>${escapeHtml(s.endereco || '')}</em>
+          </div>
+        `);
+        return marker;
+      }
+      return null;
+    }
+
+    // Populate initial markers
+    submissionsData.forEach(s => {
+      const m = createMarkerForSubmission(s);
+      if (m) {
+        m.addTo(map);
+        markersMap.set(s.id, m);
+      }
+    });
+
+    if (markersMap.size > 0) {
+      const group = new L.featureGroup(Array.from(markersMap.values()));
+      map.fitBounds(group.getBounds().pad(0.15));
+      document.getElementById("pointsCount").innerText = `${markersMap.size} pontos mapeados`;
+    } else {
+      document.getElementById("pointsCount").innerText = `Aguardando primeiras coordenadas`;
+    }
+
+    function populateFilterOptions() {
+      const cidadeSelect = document.getElementById("filterCidade");
+      const povoadoSelect = document.getElementById("filterPovoado");
+      const missionarioSelect = document.getElementById("filterMissionario");
+
+      const currentCidade = cidadeSelect.value;
+      const currentPovoado = povoadoSelect.value;
+      const currentMissionario = missionarioSelect.value;
+
+      const cidades = new Set();
+      const povoados = new Set();
+      const missionarios = new Set();
+
+      submissionsData.forEach(s => {
+        if (s.cidade && s.cidade.trim()) cidades.add(s.cidade.trim());
+        if (s.povoado && s.povoado.trim()) povoados.add(s.povoado.trim());
+        if (s.missionario && s.missionario.trim()) missionarios.add(s.missionario.trim());
+      });
+
+      // Update Cidade
+      cidadeSelect.innerHTML = '<option value="">Todas as Cidades</option>' + 
+        Array.from(cidades).sort().map(c => `<option value="${escapeHtml(c)}" ${c === currentCidade ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+
+      // Update Povoado
+      povoadoSelect.innerHTML = '<option value="">Todos os Povoados</option>' + 
+        Array.from(povoados).sort().map(p => `<option value="${escapeHtml(p)}" ${p === currentPovoado ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+
+      // Update Missionário
+      missionarioSelect.innerHTML = '<option value="">Todos os Missionários</option>' + 
+        Array.from(missionarios).sort().map(m => `<option value="${escapeHtml(m)}" ${m === currentMissionario ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('');
+    }
+
+    function applyFilters() {
+      const fCidade = document.getElementById("filterCidade").value;
+      const fPovoado = document.getElementById("filterPovoado").value;
+      const fJesus = document.getElementById("filterJesus").value;
+      const fMissionario = document.getElementById("filterMissionario").value;
+      const fGenero = document.getElementById("filterGenero").value;
+      const search = (document.getElementById("searchInput").value || '').trim().toLowerCase();
+
+      const isFilterActive = Boolean(fCidade || fPovoado || fJesus || fMissionario || fGenero || search);
+
+      const filtered = submissionsData.filter(s => {
+        if (fCidade && (s.cidade || '').trim() !== fCidade) return false;
+        if (fPovoado && (s.povoado || '').trim() !== fPovoado) return false;
+        if (fJesus && (s.recebeu_jesus || '').trim() !== fJesus) return false;
+        if (fMissionario && (s.missionario || '').trim() !== fMissionario) return false;
+        if (fGenero && (s.genero || '').trim() !== fGenero) return false;
+        if (search) {
+          const haystack = [
+            s.id, s.nome, s.telefone, s.cidade, s.povoado, s.missionario, s.endereco, s.observacoes, s.recebeu_jesus, s.data_date
+          ].filter(Boolean).join(' ').toLowerCase();
+          if (!haystack.includes(search)) return false;
+        }
+        return true;
+      });
+
+      const filteredIds = new Set(filtered.map(s => s.id));
+
+      // 1. Update table row visibility
+      const rows = document.querySelectorAll("#submissionsTable tbody tr[data-id]");
+      rows.forEach(r => {
+        const id = Number(r.getAttribute("data-id"));
+        r.style.display = filteredIds.has(id) ? "" : "none";
+      });
+
+      // Empty state handler
+      let noMatchRow = document.getElementById("noFilterMatchRow");
+      if (filtered.length === 0 && submissionsData.length > 0) {
+        if (!noMatchRow) {
+          noMatchRow = document.createElement("tr");
+          noMatchRow.id = "noFilterMatchRow";
+          noMatchRow.innerHTML = '<td colspan="12" style="text-align:center;padding:35px;color:var(--text-muted);">Nenhuma ficha encontrada para os filtros selecionados.</td>';
+          document.querySelector("#submissionsTable tbody").appendChild(noMatchRow);
+        } else {
+          noMatchRow.style.display = "";
+        }
+      } else if (noMatchRow) {
+        noMatchRow.style.display = "none";
+      }
+
+      // 2. Update Subtotals at the top (KPI Cards)
+      const totalAll = submissionsData.length;
+      const subTotal = filtered.length;
+      
+      const todayStr = new Date().toISOString().substring(0, 10);
+      const subToday = filtered.filter(s => (s.submission_time && s.submission_time.startsWith(todayStr)) || s.data_date === todayStr).length;
+
+      const subJesusSim = filtered.filter(s => s.recebeu_jesus === 'Sim').length;
+      const subEvang = filtered.filter(s => s.recebeu_jesus === 'evangelico').length;
+      const subDecidir = filtered.filter(s => s.recebeu_jesus === 'Vai decidir depois' || s.recebeu_jesus === 'decidir_depois' || s.recebeu_jesus === 'Ficou de decidir ainda').length;
+
+      const distinctMissionaries = new Set(filtered.map(s => s.missionario).filter(Boolean)).size;
+
+      document.getElementById("kpiTotal").textContent = subTotal;
+      document.getElementById("kpiToday").textContent = subToday;
+      document.getElementById("kpiJesus").textContent = subJesusSim;
+      document.getElementById("kpiMissionaries").textContent = distinctMissionaries;
+
+      const descTotal = document.getElementById("kpiTotalDesc");
+      const descToday = document.getElementById("kpiTodayDesc");
+      const descJesus = document.getElementById("kpiJesusDesc");
+      const descMiss = document.getElementById("kpiMissionariesDesc");
+
+      if (isFilterActive) {
+        descTotal.textContent = `Subtotal filtrado (de ${totalAll} no total)`;
+        descToday.textContent = `Novas coletas hoje no filtro`;
+        descJesus.innerHTML = `${subEvang} já evangélicos &bull; ${subDecidir} a decidir`;
+        descMiss.textContent = `${distinctMissionaries} missionário(s) no filtro ativo`;
+
+        document.getElementById("tableTitle").textContent = `Fichas Missionárias Coletadas (${subTotal} de ${totalAll})`;
+
+        // Build active filter description
+        const summaryParts = [];
+        if (fCidade) summaryParts.push(`Cidade: <strong>${escapeHtml(fCidade)}</strong>`);
+        if (fPovoado) summaryParts.push(`Povoado: <strong>${escapeHtml(fPovoado)}</strong>`);
+        if (fJesus) summaryParts.push(`Decisão: <strong>${escapeHtml(fJesus)}</strong>`);
+        if (fMissionario) summaryParts.push(`Missionário: <strong>${escapeHtml(fMissionario)}</strong>`);
+        if (fGenero) summaryParts.push(`Gênero: <strong>${escapeHtml(fGenero)}</strong>`);
+        if (search) summaryParts.push(`Busca: "<strong>${escapeHtml(search)}</strong>"`);
+
+        const filterStatusRow = document.getElementById("filterStatusRow");
+        filterStatusRow.style.display = "flex";
+        document.getElementById("filterSummaryText").innerHTML = summaryParts.join(' &bull; ');
+        document.getElementById("filterCountBadge").textContent = `${subTotal} de ${totalAll}`;
+      } else {
+        descTotal.textContent = "Registros salvos no banco local";
+        descToday.textContent = "Novas coletas nas últimas 24h";
+        descJesus.innerHTML = `${subEvang} já evangélicos &bull; ${subDecidir} a decidir`;
+        descMiss.textContent = "Missionários enviando fichas";
+        document.getElementById("tableTitle").textContent = `Fichas Missionárias Coletadas (${totalAll})`;
+
+        const filterStatusRow = document.getElementById("filterStatusRow");
+        filterStatusRow.style.display = "none";
+      }
+
+      // 3. Update Leaflet Map Markers
+      const visibleMarkers = [];
+      markersMap.forEach((marker, id) => {
+        if (filteredIds.has(id)) {
+          if (!map.hasLayer(marker)) marker.addTo(map);
+          visibleMarkers.push(marker);
+        } else {
+          if (map.hasLayer(marker)) map.removeLayer(marker);
+        }
+      });
+
+      const pointsCountEl = document.getElementById("pointsCount");
+      if (visibleMarkers.length > 0) {
+        pointsCountEl.textContent = `${visibleMarkers.length} pontos mapeados ${isFilterActive ? '(filtrados)' : ''}`;
+        try {
+          const group = new L.featureGroup(visibleMarkers);
+          map.fitBounds(group.getBounds().pad(0.15));
+        } catch (e) {}
+      } else {
+        pointsCountEl.textContent = isFilterActive ? "Nenhum ponto no filtro atual" : "Aguardando primeiras coordenadas";
+      }
+    }
+
+    function resetFilters() {
+      document.getElementById("filterCidade").value = "";
+      document.getElementById("filterPovoado").value = "";
+      document.getElementById("filterJesus").value = "";
+      document.getElementById("filterMissionario").value = "";
+      document.getElementById("filterGenero").value = "";
+      document.getElementById("searchInput").value = "";
+      applyFilters();
+    }
+
     async function pollLiveUpdates() {
       try {
         const resp = await fetch('/api/dashboard/live', { cache: 'no-store' });
@@ -655,17 +947,22 @@
           newItems.sort((a, b) => a.id - b.id);
           const tbody = document.querySelector("#submissionsTable tbody");
 
-          // Remover linha vazia se existir
-          const emptyRow = tbody.querySelector("td[colspan='10']");
-          if (emptyRow) emptyRow.closest("tr").remove();
+          // Remover linha vazia inicial se existir
+          const emptyRow = document.getElementById("emptyTableRow");
+          if (emptyRow) emptyRow.remove();
 
           for (const s of newItems) {
             knownIds.add(s.id);
+            submissionsData.unshift(s);
+
             const tr = document.createElement("tr");
+            tr.setAttribute("data-id", s.id);
             tr.className = "row-new-highlight";
             tr.innerHTML = `
               <td>${s.id}</td>
               <td>${escapeHtml(s.data_date || (s.submission_time ? s.submission_time.substring(0, 10) : ''))}</td>
+              <td><span class="badge badge-cidade">${escapeHtml(s.cidade || '-')}</span></td>
+              <td><span class="badge badge-povoado">${escapeHtml(s.povoado || '-')}</span></td>
               <td style="font-weight:700;">${escapeHtml(s.nome)}</td>
               <td>${s.idade !== null && s.idade !== undefined ? s.idade : '-'}</td>
               <td>
@@ -685,19 +982,9 @@
             `;
             tbody.insertBefore(tr, tbody.firstChild);
 
-            if (s.latitude && s.longitude && s.latitude !== 0.0) {
-              const marker = L.marker([s.latitude, s.longitude]).addTo(map);
-              marker.bindPopup(`
-                <div style="font-family:sans-serif;color:#1e293b;padding:4px;">
-                  <strong style="font-size:1.05rem;">${escapeHtml(s.nome)}</strong><br>
-                  <span style="color:#64748b;">${escapeHtml(s.data_date || '')}</span><br>
-                  <strong>Telefone:</strong> ${escapeHtml(s.telefone)}<br>
-                  <strong>Recebeu Jesus:</strong> ${escapeHtml(s.recebeu_jesus)}<br>
-                  <strong>Missionário:</strong> ${escapeHtml(s.missionario)}<br>
-                  <em>${escapeHtml(s.endereco || '')}</em>
-                </div>
-              `);
-              markers.push(marker);
+            const m = createMarkerForSubmission(s);
+            if (m) {
+              markersMap.set(s.id, m);
             }
           }
 
@@ -710,24 +997,8 @@
             }, 5000);
           }
 
-          filterTable();
-        }
-
-        // Atualizar KPIs
-        if (data.stats) {
-          const kTotal = document.getElementById("kpiTotal");
-          const kToday = document.getElementById("kpiToday");
-          const kJesus = document.getElementById("kpiJesus");
-          const kMissionaries = document.getElementById("kpiMissionaries");
-          const tTitle = document.getElementById("tableTitle");
-          const pCount = document.getElementById("pointsCount");
-
-          if (kTotal) kTotal.textContent = data.stats.total;
-          if (kToday) kToday.textContent = data.stats.today;
-          if (kJesus) kJesus.textContent = (data.stats.jesus_stats || {})["Sim"] || 0;
-          if (kMissionaries) kMissionaries.textContent = (data.stats.top_missionaries || []).length;
-          if (tTitle) tTitle.textContent = `Fichas Missionárias Coletadas (${data.total})`;
-          if (pCount) pCount.textContent = `${markers.length} pontos mapeados`;
+          populateFilterOptions();
+          applyFilters();
         }
       } catch (err) {
         // Silêncio em oscilação momentânea
@@ -737,14 +1008,9 @@
     // Iniciar atualização automática a cada 3 segundos (sem refresh de tela)
     setInterval(pollLiveUpdates, 3000);
 
-    function filterTable() {
-      const input = document.getElementById("searchInput").value.toLowerCase();
-      const rows = document.querySelectorAll("#submissionsTable tbody tr");
-      rows.forEach(r => {
-        const text = r.innerText.toLowerCase();
-        r.style.display = text.includes(input) ? "" : "none";
-      });
-    }
+    // Inicialização dos filtros na carga da página
+    populateFilterOptions();
+    applyFilters();
 
     function copyFormula(id) {
       const el = document.getElementById(id);

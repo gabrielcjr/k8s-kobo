@@ -72,3 +72,41 @@ def test_api_dashboard_live(client, valid_auth_headers):
     assert "timestamp" in data
     assert isinstance(data["submissions"], list)
 
+def test_dashboard_cidade_povoado_and_filters(client, valid_auth_headers):
+    """
+    Verify that the dashboard displays Cidade and Povoado columns,
+    provides field filter dropdowns (Cidade, Povoado, Jesus, Missionário, etc.),
+    and contains reactive subtotal calculation logic for top KPI cards.
+    """
+    res = client.get("/dashboard", headers=valid_auth_headers)
+    assert res.status_code == 200
+    html = res.text
+
+    # 1. Cidade and Povoado table columns
+    assert "<th>Cidade</th>" in html
+    assert "<th>Povoado</th>" in html
+    assert "badge-cidade" in html
+    assert "badge-povoado" in html
+
+    # 2. Filter controls
+    assert 'id="filterCidade"' in html
+    assert 'id="filterPovoado"' in html
+    assert 'id="filterJesus"' in html
+    assert 'id="filterMissionario"' in html
+    assert 'id="filterGenero"' in html
+    assert 'id="searchInput"' in html
+    assert "Limpar Filtros" in html
+
+    # 3. Dynamic Subtotals KPI elements
+    assert 'id="kpiTotalDesc"' in html
+    assert 'id="kpiTodayDesc"' in html
+    assert 'id="kpiJesusDesc"' in html
+    assert 'id="kpiMissionariesDesc"' in html
+
+    # 4. Filter and subtotal reactive functions
+    assert "applyFilters" in html
+    assert "resetFilters" in html
+    assert "populateFilterOptions" in html
+    assert "Subtotal filtrado" in html
+
+
