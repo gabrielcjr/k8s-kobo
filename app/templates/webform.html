@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Missionários Renova-me</title>
+  <link rel="icon" type="image/png" href="/media/Banner_renovam_vermelho.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary: #c91818;
+      --primary-hover: #a81212;
+      --primary-light: #fef2f2;
+      --primary-border: #fecaca;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --error: #dc2626;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 40px;
+    }
+
+    .banner-container {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 12px;
+      padding: 0 16px;
+    }
+
+    .banner-img {
+      width: 100%;
+      height: auto;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      display: block;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      padding: 16px;
+    }
+
+    .form-header {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .form-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .form-header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #e2e8f0;
+      color: #334155;
+      margin-top: 10px;
+    }
+    .status-badge.online {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .status-badge.offline {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .status-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .card:focus-within {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .card-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .required {
+      color: var(--error);
+      font-weight: 800;
+    }
+
+    .card-hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #ffffff;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(201, 24, 24, 0.12);
+    }
+
+    textarea {
+      min-height: 85px;
+      resize: vertical;
+    }
+
+    /* Radio / Option buttons */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    @media (min-width: 480px) {
+      .options-grid.columns-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .option-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      background: #fafafa;
+    }
+
+    .option-card:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-border);
+    }
+
+    .option-card input[type="radio"] {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #94a3b8;
+      border-radius: 50%;
+      outline: none;
+      display: grid;
+      place-content: center;
+      transition: border-color 0.2s;
+    }
+
+    .option-card input[type="radio"]::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      transform: scale(0);
+      transition: 120ms transform ease-in-out;
+      background-color: var(--primary);
+    }
+
+    .option-card input[type="radio"]:checked {
+      border-color: var(--primary);
+    }
+
+    .option-card input[type="radio"]:checked::before {
+      transform: scale(1);
+    }
+
+    .option-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: #7f1d1d;
+      font-weight: 600;
+    }
+
+    /* GPS Button & Box */
+    .geo-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px;
+      background: #0f172a;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .geo-btn:hover {
+      background: #1e293b;
+    }
+
+    .geo-btn:active {
+      transform: scale(0.99);
+    }
+
+    .geo-result {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: #334155;
+      display: none;
+    }
+
+    .mini-map {
+      height: 160px;
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: none;
+      border: 1px solid var(--border);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(201, 24, 24, 0.3);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 6px 20px rgba(201, 24, 24, 0.4);
+    }
+
+    .submit-btn:disabled {
+      background: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* Success / Feedback Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      place-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 440px;
+      width: 100%;
+      padding: 30px 24px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: var(--success);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .modal-card h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .modal-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      text-decoration: none;
+      margin-top: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 24px;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="banner-container">
+    <img src="/media/Banner_renovam_vermelho.png" alt="Banner Renova-me" class="banner-img">
+  </div>
+
+  <div class="container">
+    <div class="form-header">
+      <h1>Missionários Renova-me</h1>
+      <p>Igreja Renova-me — Ficha de Cadastro & Coleta Missionária</p>
+      <div id="connStatus" class="status-badge online">
+        <span class="dot"></span> Online (Conectado)
+      </div>
+    </div>
+
+    <form id="missionariosForm">
+      <!-- Data -->
+      <div class="card">
+        <label class="card-label">Data <span class="required">*</span></label>
+        <div class="card-hint">Data coletada automaticamente, por favor, clique em próximo.</div>
+        <input type="date" id="dataInput" name="Data" required>
+      </div>
+
+      <!-- Nome -->
+      <div class="card">
+        <label class="card-label">Nome <span class="required">*</span></label>
+        <input type="text" id="nomeInput" name="Nome" placeholder="Nome completo" required>
+      </div>
+
+      <!-- Idade -->
+      <div class="card">
+        <label class="card-label">Idade <span class="required">*</span></label>
+        <div class="card-hint">Insira apenas números</div>
+        <input type="number" id="idadeInput" name="Idade" placeholder="Ex: 28" min="0" max="130" required>
+      </div>
+
+      <!-- Telefone -->
+      <div class="card">
+        <label class="card-label">Telefone <span class="required">*</span></label>
+        <div class="card-hint">O telefone deve conter exatamente 11 números (Ex 75988888888)</div>
+        <input type="text" id="telefoneInput" name="Telefone" placeholder="75988888888" maxlength="15" required>
+      </div>
+
+      <!-- Gênero -->
+      <div class="card">
+        <label class="card-label">Gênero <span class="required">*</span></label>
+        <div class="options-grid columns-2">
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Genero" value="Masculino" required>
+            <span>Masculino</span>
+          </label>
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Genero" value="Feminino" required>
+            <span>Feminino</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Recebeu Jesus? -->
+      <div class="card">
+        <label class="card-label">Recebeu Jesus? <span class="required">*</span></label>
+        <div class="options-grid">
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Recebeu_a_Jesus" value="Sim" required>
+            <span>Sim</span>
+          </label>
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Recebeu_a_Jesus" value="Não" required>
+            <span>Não</span>
+          </label>
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Recebeu_a_Jesus" value="evangelico" required>
+            <span>É evangélico(a)</span>
+          </label>
+          <label class="option-card" onclick="selectRadio(this)">
+            <input type="radio" name="Recebeu_a_Jesus" value="Vai decidir depois" required>
+            <span>Ficou de decidir ainda</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Endereço -->
+      <div class="card">
+        <label class="card-label">Endereço ou referência</label>
+        <div class="card-hint">Opcional</div>
+        <input type="text" id="enderecoInput" name="Endereco_ou_referencia" placeholder="Rua, número, bairro ou ponto de referência">
+      </div>
+
+      <!-- Geolocalizador -->
+      <div class="card">
+        <label class="card-label">Geolocalizador <span class="required">*</span></label>
+        <div class="card-hint">Clique em "obter ponto" para capturar a sua localização atual, se demorar pode clicar em salvar.</div>
+        <button type="button" class="geo-btn" id="getGpsBtn" onclick="captureGPS()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          Obter Localização GPS (Ponto Atual)
+        </button>
+        <div class="geo-result" id="geoResult"></div>
+        <div class="mini-map" id="miniMap"></div>
+        <input type="hidden" id="geopointInput" name="Geolocalizador" required>
+      </div>
+
+      <!-- Observações -->
+      <div class="card">
+        <label class="card-label">Observações</label>
+        <div class="card-hint">Opcional</div>
+        <textarea id="observacoesInput" name="Observacoes" placeholder="Informações adicionais relevantes..."></textarea>
+      </div>
+
+      <!-- Nome do Missionário -->
+      <div class="card">
+        <label class="card-label">Nome do Missionário(a) <span class="required">*</span></label>
+        <div class="card-hint">Por favor, informe seu nome que está preenchendo esta ficha</div>
+        <input type="text" id="missionarioInput" name="Nome_do_Mission_rio_a" placeholder="Seu nome completo" required>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        Enviar Ficha Missionária
+      </button>
+    </form>
+
+    <div class="footer">
+      Servidor Missionário Renova-me &bull; <a href="/dashboard">Acessar Painel</a>
+    </div>
+  </div>
+
+  <!-- Modal Sucesso -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal-card">
+      <div class="modal-icon">✓</div>
+      <h2>Ficha Enviada com Sucesso!</h2>
+      <p id="successDesc">A ficha de cadastro foi registrada e salva no servidor da Igreja Renova-me.</p>
+      <button class="submit-btn" onclick="resetForm()">Cadastrar Outra Pessoa</button>
+      <a href="/dashboard" class="btn-secondary">Ver Painel de Coletas</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let miniMapInstance = null;
+    let mapMarker = null;
+
+    // Set today date by default
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("dataInput").value = today;
+
+      // Remember missionary name in localStorage for convenience
+      const savedMissionary = localStorage.getItem("saved_missionary_name");
+      if (savedMissionary) {
+        document.getElementById("missionarioInput").value = savedMissionary;
+      }
+
+      // Check online / offline
+      window.addEventListener("online", updateConnStatus);
+      window.addEventListener("offline", updateConnStatus);
+      updateConnStatus();
+    });
+
+    function updateConnStatus() {
+      const el = document.getElementById("connStatus");
+      if (navigator.onLine) {
+        el.className = "status-badge online";
+        el.innerHTML = '<span class="dot"></span> Online (Conectado)';
+        syncOfflineQueue();
+      } else {
+        el.className = "status-badge offline";
+        el.innerHTML = '<span class="dot"></span> Offline (Salvará localmente)';
+      }
+    }
+
+    function selectRadio(card) {
+      const groupName = card.querySelector('input[type="radio"]').name;
+      document.querySelectorAll(`input[name="${groupName}"]`).forEach(inp => {
+        inp.closest('.option-card').classList.remove('selected');
+      });
+      card.querySelector('input[type="radio"]').checked = true;
+      card.classList.add('selected');
+    }
+
+    function captureGPS() {
+      const btn = document.getElementById("getGpsBtn");
+      const res = document.getElementById("geoResult");
+      const hiddenInput = document.getElementById("geopointInput");
+      const mapDiv = document.getElementById("miniMap");
+
+      if (!navigator.geolocation) {
+        alert("Geolocalização não é suportada por este dispositivo.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = "Obtendo sinal GPS...";
+      res.style.display = "block";
+      res.innerHTML = "Buscando satélites / sinal de rede...";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          btn.disabled = false;
+          btn.innerHTML = "✓ Ponto GPS Capturado (Atualizar)";
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const alt = pos.coords.altitude || 0.0;
+          const acc = pos.coords.accuracy || 10.0;
+
+          // OpenRosa geopoint format: lat lon alt accuracy
+          const geopointVal = `${lat} ${lon} ${alt} ${acc}`;
+          hiddenInput.value = geopointVal;
+
+          res.innerHTML = `<strong>Localização:</strong> Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)} (Precisão: ±${Math.round(acc)}m)`;
+
+          mapDiv.style.display = "block";
+          if (!miniMapInstance) {
+            miniMapInstance = L.map('miniMap').setView([lat, lon], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap'
+            }).addTo(miniMapInstance);
+            mapMarker = L.marker([lat, lon]).addTo(miniMapInstance);
+          } else {
+            miniMapInstance.setView([lat, lon], 16);
+            if (mapMarker) mapMarker.setLatLng([lat, lon]);
+            miniMapInstance.invalidateSize();
+          }
+        },
+        (err) => {
+          btn.disabled = false;
+          btn.innerHTML = "Tentar Obter GPS Novamente";
+          res.innerHTML = `<span style="color:var(--error);">Não foi possível obter GPS (${err.message}). Preencha mesmo assim se necessário.</span>`;
+          // Default placeholder point if GPS fails so submission doesn't block
+          hiddenInput.value = "0.0 0.0 0.0 999.0";
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    }
+
+    // Form Submission
+    document.getElementById("missionariosForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const submitBtn = document.getElementById("submitBtn");
+
+      // Validate phone: 11 digits
+      const telClean = document.getElementById("telefoneInput").value.replace(/\D/g, "");
+      if (telClean.length !== 11) {
+        alert("O telefone deve conter exatamente 11 números com DDD (Ex: 75988888888)");
+        document.getElementById("telefoneInput").focus();
+        return;
+      }
+
+      // Check GPS
+      if (!document.getElementById("geopointInput").value) {
+        // Fallback default
+        document.getElementById("geopointInput").value = "0.0 0.0 0.0 999.0";
+      }
+
+      const formData = new FormData(form);
+      const payload = {
+        data_date: formData.get("Data"),
+        nome: formData.get("Nome"),
+        idade: parseInt(formData.get("Idade")),
+        telefone: telClean,
+        genero: formData.get("Genero"),
+        recebeu_jesus: formData.get("Recebeu_a_Jesus"),
+        endereco: formData.get("Endereco_ou_referencia") || "",
+        geopoint: formData.get("Geolocalizador"),
+        observacoes: formData.get("Observacoes") || "",
+        missionario: formData.get("Nome_do_Mission_rio_a")
+      };
+
+      // Save missionary name
+      if (payload.missionario) {
+        localStorage.setItem("saved_missionary_name", payload.missionario);
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "Enviando ficha...";
+
+      if (!navigator.onLine) {
+        // Save to offline queue
+        saveToOfflineQueue(payload);
+        showSuccessModal(true);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "Enviar Ficha Missionária";
+        return;
+      }
+
+      try {
+        const resp = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          throw new Error("Erro do servidor: " + resp.status);
+        }
+
+        showSuccessModal(false);
+      } catch (err) {
+        console.warn("Falha no envio online, salvando na fila offline:", err);
+        saveToOfflineQueue(payload);
+        showSuccessModal(true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "Enviar Ficha Missionária";
+      }
+    });
+
+    function showSuccessModal(isOffline) {
+      const modal = document.getElementById("successModal");
+      const desc = document.getElementById("successDesc");
+      if (isOffline) {
+        desc.textContent = "Ficha salva com sucesso na memória do aparelho! Será enviada automaticamente assim que a conexão retornar.";
+      } else {
+        desc.textContent = "A ficha de cadastro foi registrada e salva no servidor da Igreja Renova-me.";
+      }
+      modal.style.display = "grid";
+    }
+
+    function resetForm() {
+      document.getElementById("nomeInput").value = "";
+      document.getElementById("idadeInput").value = "";
+      document.getElementById("telefoneInput").value = "";
+      document.getElementById("enderecoInput").value = "";
+      document.getElementById("observacoesInput").value = "";
+      document.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.checked = false;
+        r.closest('.option-card').classList.remove('selected');
+      });
+      document.getElementById("successModal").style.display = "none";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function saveToOfflineQueue(item) {
+      let queue = JSON.parse(localStorage.getItem("renovame_offline_queue") || "[]");
+      queue.push(item);
+      localStorage.setItem("renovame_offline_queue", JSON.stringify(queue));
+    }
+
+    async function syncOfflineQueue() {
+      let queue = JSON.parse(localStorage.getItem("renovame_offline_queue") || "[]");
+      if (queue.length === 0) return;
+
+      console.log(`Enviando ${queue.length} fichas pendentes da fila offline...`);
+      const remaining = [];
+      for (const item of queue) {
+        try {
+          await fetch("/api/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item)
+          });
+        } catch (e) {
+          remaining.push(item);
+        }
+      }
+      localStorage.setItem("renovame_offline_queue", JSON.stringify(remaining));
+      if (remaining.length === 0) {
+        console.log("Todas as fichas offline foram sincronizadas com sucesso!");
+      }
+    }
+  </script>
+</body>
+</html>

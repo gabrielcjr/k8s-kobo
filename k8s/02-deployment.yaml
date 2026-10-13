@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kobo-server
+  namespace: kobo
+  labels:
+    app: kobo-server
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: kobo-server
+  template:
+    metadata:
+      labels:
+        app: kobo-server
+    spec:
+      containers:
+      - name: kobo-server
+        image: docker.io/library/kobo-server:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATA_DIR
+          value: "/data"
+        - name: KOBO_USER
+          value: "renovamechurch"
+        - name: KOBO_PASS
+          value: "Rvehonraegloria"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: "20m"
+            memory: "40Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: kobo-data-pvc

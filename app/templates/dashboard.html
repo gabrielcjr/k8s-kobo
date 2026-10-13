@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Missionários Renova-me</title>
+  <link rel="icon" type="image/png" href="/media/Banner_renovam_vermelho.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary: #c91818;
+      --primary-hover: #b01414;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --blue: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--surface-border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .nav-brand img {
+      height: 38px;
+      border-radius: 8px;
+    }
+
+    .nav-brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      background: var(--surface-border);
+    }
+
+    .btn-success {
+      background: #15803d;
+      color: #fff;
+    }
+    .btn-success:hover {
+      background: #16a34a;
+    }
+
+    .main {
+      max-width: 1380px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .kpi-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .kpi-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Map & Setup Section */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 992px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #map {
+      height: 380px;
+      border-radius: 10px;
+      border: 1px solid var(--surface-border);
+    }
+
+    .setup-box {
+      background: #0f172a;
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+
+    .setup-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setup-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .setup-code {
+      background: #1e293b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      color: #38bdf8;
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+
+    /* Submissions Table */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--surface-border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: #162032;
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--surface-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--surface-border);
+      color: #e2e8f0;
+      white-space: nowrap;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-sim { background: #166534; color: #86efac; }
+    .badge-nao { background: #991b1b; color: #fca5a5; }
+    .badge-evang { background: #075985; color: #7dd3fc; }
+    .badge-decidir { background: #854d0e; color: #fde047; }
+    .badge-app { background: #3730a3; color: #c7d2fe; }
+    .badge-web { background: #1e293b; color: #94a3b8; border: 1px solid #475569; }
+
+    .search-input {
+      background: #0f172a;
+      border: 1px solid var(--surface-border);
+      color: #fff;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      outline: none;
+      width: 280px;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <a href="/dashboard" class="nav-brand">
+      <img src="/media/Banner_renovam_vermelho.png" alt="Renova-me Logo">
+      <div>
+        <h1>Painel Missionários Renova-me</h1>
+        <small style="color:var(--text-muted);font-size:0.75rem;">KoBoToolbox / OpenRosa K3s Server</small>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <a href="/api/export/xlsx" class="btn btn-success" download>
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+        Exportar Excel (.xlsx)
+      </a>
+      <a href="/api/export/csv" class="btn btn-outline" download>CSV</a>
+      <a href="/x/PY2hbkKi" target="_blank" class="btn btn-primary">Abrir Formulário Web</a>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- KPI Section -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-title">Total de Fichas Coletadas</span>
+        <span class="kpi-value">{{ stats.total }}</span>
+        <span class="kpi-desc">Registros salvos no banco local</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-title">Coletadas Hoje</span>
+        <span class="kpi-value" style="color:var(--blue);">{{ stats.today }}</span>
+        <span class="kpi-desc">Novas coletas nas últimas 24h</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-title">Decisão por Jesus: "Sim"</span>
+        <span class="kpi-value" style="color:var(--success);">{{ stats.jesus_stats.get("Sim", 0) }}</span>
+        <span class="kpi-desc">{{ stats.jesus_stats.get("evangelico", 0) }} já evangélicos &bull; {{ stats.jesus_stats.get("Vai decidir depois", 0) }} a decidir</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-title">Missionários Ativos</span>
+        <span class="kpi-value" style="color:var(--warning);">{{ stats.top_missionaries|length }}</span>
+        <span class="kpi-desc">Missionários enviando fichas</span>
+      </div>
+    </section>
+
+    <!-- Map & KoBoCollect App Setup Guide -->
+    <section class="grid-2">
+      <!-- Leaflet Map -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            Mapa de Localização dos Contatos
+          </h2>
+          <span style="font-size:0.8rem;color:var(--text-muted);" id="pointsCount"></span>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- App Setup Guide -->
+      <div class="panel">
+        <h2 class="panel-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+          Configuração do KoBoCollect
+        </h2>
+        <p style="font-size:0.85rem;color:var(--text-muted);">
+          No aplicativo KoBoCollect ou ODK Collect (Android), acesse <strong>Configurações &rarr; Servidor</strong> e preencha:
+        </p>
+
+        <div class="setup-box">
+          <div class="setup-item">
+            <span class="setup-label">URL do Servidor</span>
+            <span class="setup-code">{{ base_url }}</span>
+          </div>
+          <div class="setup-item">
+            <span class="setup-label">Nome de Usuário</span>
+            <span class="setup-code">renovamechurch</span>
+          </div>
+          <div class="setup-item">
+            <span class="setup-label">Senha</span>
+            <span class="setup-code">Rvehonraegloria</span>
+          </div>
+        </div>
+
+        <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.4;">
+          <strong>Passo a passo no aplicativo:</strong><br>
+          1. Toque em <em>Baixar formulário em branco</em> para sincronizar.<br>
+          2. Colete os dados no campo (mesmo sem internet).<br>
+          3. Toque em <em>Enviar formulário finalizado</em> ao conectar.
+        </div>
+      </div>
+    </section>
+
+    <!-- Submissions Table -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Fichas Missionárias Coletadas ({{ submissions|length }})</h2>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nome, telefone, missionário..." onkeyup="filterTable()">
+      </div>
+
+      <div class="table-container">
+        <table id="submissionsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data</th>
+              <th>Nome</th>
+              <th>Idade</th>
+              <th>Telefone</th>
+              <th>Gênero</th>
+              <th>Recebeu Jesus?</th>
+              <th>Endereço / Referência</th>
+              <th>Missionário(a)</th>
+              <th>Origem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in submissions %}
+            <tr>
+              <td>{{ s.id }}</td>
+              <td>{{ s.data_date or s.submission_time[:10] }}</td>
+              <td style="font-weight:700;">{{ s.nome }}</td>
+              <td>{{ s.idade if s.idade is not none else '-' }}</td>
+              <td>
+                <a href="https://wa.me/55{{ s.telefone }}" target="_blank" style="color:var(--blue);text-decoration:none;">
+                  {{ s.telefone }}
+                </a>
+              </td>
+              <td>{{ s.genero }}</td>
+              <td>
+                {% if s.recebeu_jesus == 'Sim' %}
+                  <span class="badge badge-sim">Sim</span>
+                {% elif s.recebeu_jesus == 'Não' %}
+                  <span class="badge badge-nao">Não</span>
+                {% elif s.recebeu_jesus == 'evangelico' %}
+                  <span class="badge badge-evang">É Evangélico(a)</span>
+                {% else %}
+                  <span class="badge badge-decidir">{{ s.recebeu_jesus }}</span>
+                {% endif %}
+              </td>
+              <td>{{ s.endereco or '-' }}</td>
+              <td style="font-weight:600;">{{ s.missionario }}</td>
+              <td>
+                {% if s.source == 'kobo_collect' %}
+                  <span class="badge badge-app">KoBoCollect</span>
+                {% else %}
+                  <span class="badge badge-web">Web</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
+                Nenhuma ficha coletada ainda. Utilize o aplicativo KoBoCollect ou o formulário web para registrar o primeiro contato!
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([-12.257, -38.963], 13); // Default Bahia/Feira de Santana center
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const submissionsData = {{ submissions | tojson }};
+    const markers = [];
+
+    submissionsData.forEach(s => {
+      if (s.latitude && s.longitude && s.latitude !== 0.0) {
+        const marker = L.marker([s.latitude, s.longitude]).addTo(map);
+        marker.bindPopup(`
+          <div style="font-family:sans-serif;color:#1e293b;padding:4px;">
+            <strong style="font-size:1.05rem;">${s.nome}</strong><br>
+            <span style="color:#64748b;">${s.data_date || ''}</span><br>
+            <strong>Telefone:</strong> ${s.telefone}<br>
+            <strong>Recebeu Jesus:</strong> ${s.recebeu_jesus}<br>
+            <strong>Missionário:</strong> ${s.missionario}<br>
+            <em>${s.endereco || ''}</em>
+          </div>
+        `);
+        markers.push(marker);
+      }
+    });
+
+    if (markers.length > 0) {
+      const group = new L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.15));
+      document.getElementById("pointsCount").innerText = `${markers.length} pontos mapeados`;
+    } else {
+      document.getElementById("pointsCount").innerText = `Aguardando primeiras coordenadas`;
+    }
+
+    function filterTable() {
+      const input = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#submissionsTable tbody tr");
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+  </script>
+</body>
+</html>

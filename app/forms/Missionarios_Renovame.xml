@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>Missionários Renova-me</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="Brasil (português)" default="true()">
+          <text id="dh9jq24-0">
+            <value>Masculino</value>
+          </text>
+          <text id="dh9jq24-1">
+            <value>Feminino</value>
+          </text>
+          <text id="to0tn99-0">
+            <value>Sim</value>
+          </text>
+          <text id="to0tn99-1">
+            <value>Não</value>
+          </text>
+          <text id="to0tn99-2">
+            <value>É evangélico(a)</value>
+          </text>
+          <text id="to0tn99-3">
+            <value>Ficou de decidir ainda</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Data:label">
+            <value>Data</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Data:hint">
+            <value>Data coletada automaticamente, por favor, clique em próximo.</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Nome:label">
+            <value>Nome</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Idade:label">
+            <value>Idade</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Telefone:label">
+            <value>Telefone</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Genero:label">
+            <value>Gênero</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Recebeu_a_Jesus:label">
+            <value>Recebeu Jesus?</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia:label">
+            <value>Endereço ou referência</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia:hint">
+            <value>Opcional</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador:label">
+            <value>Geolocalizador</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador:hint">
+            <value>Clique em "obter ponto" para capturar a sua localização atual, se demorar pode clicar em salvar.</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Observacoes:label">
+            <value>Observações</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Observacoes:hint">
+            <value>Opcional</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a:label">
+            <value>Nome do Missionário(a)</value>
+          </text>
+          <text id="/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a:hint">
+            <value>Por favor, informe seu nome que está preenchendo esta ficha</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <a7FqboN3tiXKPo6hSc8MzJ id="a7FqboN3tiXKPo6hSc8MzJ">
+          <deviceid/>
+          <Data/>
+          <Nome/>
+          <Idade/>
+          <Telefone/>
+          <Genero/>
+          <Recebeu_a_Jesus/>
+          <Endereco_ou_referencia/>
+          <Geolocalizador/>
+          <Observacoes/>
+          <Nome_do_Mission_rio_a/>
+          <meta>
+            <instanceID/>
+          </meta>
+        </a7FqboN3tiXKPo6hSc8MzJ>
+      </instance>
+      <instance id="dh9jq24">
+        <root>
+          <item>
+            <itextId>dh9jq24-0</itextId>
+            <name>Masculino</name>
+          </item>
+          <item>
+            <itextId>dh9jq24-1</itextId>
+            <name>Feminino</name>
+          </item>
+        </root>
+      </instance>
+      <instance id="to0tn99">
+        <root>
+          <item>
+            <itextId>to0tn99-0</itextId>
+            <name>Sim</name>
+          </item>
+          <item>
+            <itextId>to0tn99-1</itextId>
+            <name>Não</name>
+          </item>
+          <item>
+            <itextId>to0tn99-2</itextId>
+            <name>evangelico</name>
+          </item>
+          <item>
+            <itextId>to0tn99-3</itextId>
+            <name>Vai decidir depois</name>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/deviceid" jr:preload="property" type="string" jr:preloadParams="deviceid"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Data" type="date" required="true()"/>
+      <setvalue ref="/a7FqboN3tiXKPo6hSc8MzJ/Data" value="today()" event="odk-instance-first-load"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Nome" type="string" required="true()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Idade" type="int" required="true()" jr:constraintMsg="Insira apenas números"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Telefone" type="string" required="true()" constraint="regex(., '^\d{11}$')" jr:constraintMsg="O telefone deve conter exatamente 11 números (Ex 75988888888))."/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Genero" type="string" required="true()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Recebeu_a_Jesus" type="string" required="true()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia" type="string" required="false()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador" type="geopoint" required="true()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Observacoes" type="string" required="false()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a" type="string" required="true()"/>
+      <bind nodeset="/a7FqboN3tiXKPo6hSc8MzJ/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Data">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Data:label')"/>
+      <hint ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Data:hint')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Nome">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Nome:label')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Idade">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Idade:label')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Telefone">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Telefone:label')"/>
+    </input>
+    <select1 appearance="horizontal" ref="/a7FqboN3tiXKPo6hSc8MzJ/Genero">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Genero:label')"/>
+      <itemset nodeset="instance('dh9jq24')/root/item">
+        <value ref="name"/>
+        <label ref="jr:itext(itextId)"/>
+      </itemset>
+    </select1>
+    <select1 appearance="horizontal" ref="/a7FqboN3tiXKPo6hSc8MzJ/Recebeu_a_Jesus">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Recebeu_a_Jesus:label')"/>
+      <itemset nodeset="instance('to0tn99')/root/item">
+        <value ref="name"/>
+        <label ref="jr:itext(itextId)"/>
+      </itemset>
+    </select1>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia:label')"/>
+      <hint ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Endereco_ou_referencia:hint')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador:label')"/>
+      <hint ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Geolocalizador:hint')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Observacoes">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Observacoes:label')"/>
+      <hint ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Observacoes:hint')"/>
+    </input>
+    <input ref="/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a">
+      <label ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a:label')"/>
+      <hint ref="jr:itext('/a7FqboN3tiXKPo6hSc8MzJ/Nome_do_Mission_rio_a:hint')"/>
+    </input>
+  </h:body>
+</h:html>
