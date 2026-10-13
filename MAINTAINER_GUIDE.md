@@ -1,0 +1,253 @@
+# 📘 Manual do Mantenedor (Maintainer Guide)
+## KoBoToolbox Native Server — Igreja Renova-me
+
+Este documento contém todas as instruções técnicas, arquiteturais e operacionais necessárias para administrar, evoluir, diagnosticar e recuperar o servidor **KoBoToolbox / OpenRosa** da Igreja Renova-me hospedado no cluster **K3s**.
+
+---
+
+## 1. Contexto e Motivação do Projeto
+
+Originalmente, a coleta de dados de missões utilizava a plataforma gratuita na nuvem da KoBoToolbox (`ee.kobotoolbox.org/x/PY2hbkKi`). Devido ao cancelamento do plano gratuito, este servidor nativo foi desenvolvido para:
+1. **Eliminar dependência de planos de terceiros**, mantendo os dados proprietários dentro da infraestrutura da organização.
+2. **Substituir o stack pesado original** (Postgres + Redis + Celery + Django KPI + Kobocat + Enketo), que consumiria mais de 4 GB de memória RAM, por um servidor ultraleve em Python / FastAPI / SQLite consumindo apenas ~40 MB de memória RAM.
+3. **Preservar a experiência dos missionários**: não exigir reaprendizado nem alteração de fluxos. O app Android **KoBoCollect** e a coleta web offline continuam funcionando identicamente.
+4. **Preservar a integração com Google Sheets**: manter a fórmula `=IMPORTDATA(...)` funcionando sem quebrar relatórios e dashboards já existentes na liderança.
+
+---
+
+## 2. Topologia de Infraestrutura
+
+* **Servidor / VM:** Máquina host Linux ARM64 (Oracle Cloud Ampere A1) no IP público `144.22.149.93`.
+* **Domínio Oficial:** `https://kobo.gabrielcjr.website` (alias histórico: `https://kobo.gabriel.website`).
+* **Gateway Host (Nginx):** Executa diretamente no sistema operacional da VM, encerrando SSL/TLS via certificados Let's Encrypt gerados via Certbot:
+  * Certificado: `/etc/letsencrypt/live/kobo.gabrielcjr.website/fullchain.pem`
+  * Chave Privada: `/etc/letsencrypt/live/kobo.gabrielcjr.website/privkey.pem`
+  * Redireciona o tráfego HTTP/HTTPS para a porta NodePort do Kubernetes: `http://127.0.0.1:30090`.
+* **Cluster Kubernetes (K3s):**
+  * **Namespace:** `kobo`
+  * **Deployment:** `kobo-server` (1 réplica)
+  * **Service:** `kobo-server` (Tipo: `NodePort`, porta `8000:30090`)
+  * **Storage:** `kobo-data-pvc` (StorageClass `local-path`, 2Gi), montado em `/data`.
+
+---
+
+## 3. Estrutura de Código e Responsabilidades
+
+### [`app/main.py`](file:///home/ubuntu/k8s_kobo/app/main.py)
+Ponto de entrada da aplicação FastAPI. Responsável por:
+* **Autenticação HTTP Basic:** Função `verify_credentials()` valida `renovamechurch:Rvehonraegloria`.
+* **OpenRosa Protocol:**
+  * `/{username}/formList` e `/formList`: Catálogo XML consumido pelo KoBoCollect.
+  * `/formXml` e `/forms/{id}/form.xml`: Download da definição XForm.
+  * `HEAD` e `POST /{username}/submission` e `/submission`: Recebimento de fichas multipart enviadas pelo aplicativo.
+* **Formulário Web:**
+  * `GET /` e `GET /x/{slug}`: Renderização do formulário PWA responsivo.
+  * `GET /sw.js`, `GET /x/offline-app-worker.js`: Cache Service Worker para funcionamento 100% offline.
+  * `POST /api/submit`: Ingestão de submissões em JSON provenientes do formulário web.
+* **Painel Administrativo:**
+  * `GET /dashboard` e `GET /admin`: Renderiza a tela analítica com métricas e mapa.
+  * `GET /api/dashboard/live`: Endpoint JSON de polling a cada 3s para inserção de novas submissões em tempo real sem refresh.
+* **APIs de Integração e Exportação:**
+  * `GET /data.csv`: Endpoint consumido pelo Google Sheets (`=IMPORTDATA`).
+  * `GET /campo-missionarios.csv`: Endpoint simplificado para ações futuras.
+  * `GET /api/export/xlsx`: Gera planilha binária em formato Excel (.xlsx).
+  * `GET /api/export/geojson`: Exporta os pontos geográficos em formato GeoJSON para QGIS ou ArcGIS.
+  * `GET /healthz`: Probe de liveness e readiness do Kubernetes.
+
+### [`app/database.py`](file:///home/ubuntu/k8s_kobo/app/database.py)
+Camada de acesso a dados SQLite:
+* Gerencia o arquivo `/data/kobo.db`.
+* Criação de tabelas, índices e migrações transparentes.
+* Normalização de coordenadas geográficas (`parse_geopoint` separa latitude, longitude, altitude e precisão).
+* Cálculo das agregações de estatísticas de decisões, gêneros e missionários mais ativos.
+
+### [`app/openrosa.py`](file:///home/ubuntu/k8s_kobo/app/openrosa.py)
+Parser de submissões móveis:
+* Processa requisições multipart com arquivos XML enviados pelo KoBoCollect/ODK.
+* Extrai metadados do aparelho (`deviceid`), data, campos de texto, seleções e coordenadas geográficas.
+
+### [`app/templates/webform.html`](file:///home/ubuntu/k8s_kobo/app/templates/webform.html)
+Frontend do formulário missionário:
+* PWA instalável com suporte a rascunhos locais e fila offline.
+* **Regra de Segurança da Informação:**
+  * Sem links ou botões para o dashboard.
+  * Sem botão de exportação de backup local.
+  * Purga imediata: Registros enviados com sucesso ao servidor são removidos imediatamente do `localStorage`, garantindo que um usuário comum não possa visualizar dados de outras pessoas ou de coletas anteriores.
+
+### [`app/templates/dashboard.html`](file:///home/ubuntu/k8s_kobo/app/templates/dashboard.html)
+Frontend do painel analítico da liderança:
+* Gráficos e indicadores de KPIs (Total, Hoje, Decisões, Missionários).
+* Mapa Leaflet interativo com marcadores automáticos.
+* **Mecanismo de Polling em Tempo Real:** A cada 3 segundos requisita `/api/dashboard/live`, inserindo novos registros no topo da tabela com destaque verde animado e atualizando contadores sem necessidade de recarregar a página.
+
+---
+
+## 4. Dicionário de Dados (`submissions`)
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY | Identificador sequencial |
+| `uuid` | TEXT UNIQUE | Identificador único universal da ficha |
+| `data_date` | TEXT | Data da coleta no formato `YYYY-MM-DD` |
+| `nome` | TEXT | Nome completo do entrevistado |
+| `idade` | INTEGER | Idade informada |
+| `telefone` | TEXT | Telefone celular (11 dígitos, DDD + número) |
+| `genero` | TEXT | `Masculino` ou `Feminino` |
+| `recebeu_jesus` | TEXT | Decisão espiritual (`Sim`, `Não`, `evangelico`, `decidir_depois`) |
+| `endereco` | TEXT | Endereço residencial ou ponto de referência |
+| `geopoint` | TEXT | String de 4 elementos: `lat long alt accuracy` |
+| `latitude` | REAL | Latitude em graus decimais (ex: `-12.2570`) |
+| `longitude` | REAL | Longitude em graus decimais (ex: `-38.9640`) |
+| `altitude` | REAL | Altitude em metros |
+| `accuracy` | REAL | Precisão do GPS em metros |
+| `observacoes` | TEXT | Notas adicionais e pedidos de oração |
+| `missionario` | TEXT | Nome do missionário que preencheu a ficha |
+| `device_id` | TEXT | Identificador do dispositivo móvel ou `web-browser` |
+| `source` | TEXT | Origem do registro: `kobo_collect` ou `web` |
+| `created_at` | TEXT | Timestamp ISO-8601 da gravação no banco |
+
+---
+
+## 5. Procedimentos Operacionais Padrão (SOP)
+
+### SOP-01: Executar Testes Automatizados Localmente
+Sempre que fizer alterações no código, valide com a suíte de 42 testes:
+```bash
+# Navegar até o diretório do projeto
+cd /home/ubuntu/k8s_kobo
+
+# Executar os testes via ambiente virtual existente
+/home/ubuntu/k8s_kobo/.venv/bin/pytest /home/ubuntu/k8s_kobo/tests -v
+```
+Todos os testes devem passar (código de saída 0).
+
+---
+
+### SOP-02: Construir e Atualizar o Serviço no Kubernetes (Deploy)
+O cluster K3s consome a imagem localmente através do containerd:
+```bash
+cd /home/ubuntu/k8s_kobo
+
+# 1. Construir a imagem Docker
+docker build -t kobo-server:latest .
+
+# 2. Importar o tar da imagem para o containerd do K3s
+docker save kobo-server:latest | sudo k3s ctr images import -
+
+# 3. Reiniciar o deployment para assumir a nova imagem
+kubectl rollout restart -n kobo deploy/kobo-server
+
+# 4. Aguardar a conclusão do rollout
+kubectl rollout status -n kobo deploy/kobo-server
+```
+
+---
+
+### SOP-03: Realizar Backup do Banco de Dados
+O banco SQLite reside no volume persistente do pod. Para extrair um backup:
+```bash
+# Descobrir o nome do pod ativo
+POD=$(kubectl get pod -n kobo -l app=kobo-server -o jsonpath="{.items[0].metadata.name}")
+
+# Copiar o arquivo SQLite para o host
+BACKUP_FILE="/home/ubuntu/kobo_backup_$(date +%Y%m%d_%H%M%S).db"
+kubectl cp "kobo/${POD}:/data/kobo.db" "$BACKUP_FILE"
+
+echo "Backup concluído em: $BACKUP_FILE"
+```
+
+---
+
+### SOP-04: Restaurar um Backup do Banco de Dados
+Caso seja necessário restaurar uma cópia de segurança:
+```bash
+POD=$(kubectl get pod -n kobo -l app=kobo-server -o jsonpath="{.items[0].metadata.name}")
+BACKUP_FILE="/caminho/para/seu/backup.db"
+
+# 1. Copiar o backup para o pod
+kubectl cp "$BACKUP_FILE" "kobo/${POD}:/data/kobo.db"
+
+# 2. Reiniciar o pod para recarregar as conexões
+kubectl delete pod -n kobo "$POD"
+```
+
+---
+
+### SOP-05: Como Trocar Senhas ou Credenciais
+As credenciais estão definidas como variáveis de ambiente no manifesto do deployment ([`k8s/02-deployment.yaml`](file:///home/ubuntu/k8s_kobo/k8s/02-deployment.yaml)):
+```yaml
+env:
+- name: KOBO_USER
+  value: "renovamechurch"
+- name: KOBO_PASS
+  value: "NOVA_SENHA_AQUI"
+```
+Após editar o arquivo:
+```bash
+kubectl apply -f /home/ubuntu/k8s_kobo/k8s/02-deployment.yaml
+```
+*Lembre-se de atualizar também os celulares dos missionários no KoBoCollect e informar à liderança para o dashboard.*
+
+---
+
+### SOP-06: Renovação do Certificado SSL Let's Encrypt
+O Certbot está configurado com webroot no host:
+```bash
+# Testar renovação em modo simulação
+sudo certbot renew --dry-run
+
+# Forçar renovação manual caso necessário
+sudo certbot certonly --webroot -w /var/www/certbot -d kobo.gabrielcjr.website
+
+# Recarregar o Nginx do host após renovação
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+---
+
+### SOP-07: Resolução de Incidentes e Diagnóstico (Troubleshooting)
+
+#### 1. Pod não sobe (`CrashLoopBackOff` ou `Error`)
+```bash
+# Ver eventos do pod
+kubectl describe pod -n kobo -l app=kobo-server
+
+# Ver logs da aplicação
+kubectl logs -n kobo -l app=kobo-server --tail=100
+```
+
+#### 2. Site inacessível externamente (Erro 502 Bad Gateway no navegador)
+1. Verifique se o pod está saudável:
+   ```bash
+   kubectl get pods -n kobo
+   ```
+2. Teste o endpoint localmente na porta NodePort do host:
+   ```bash
+   curl -I http://127.0.0.1:30090/healthz
+   ```
+3. Verifique o Nginx do host:
+   ```bash
+   sudo systemctl status nginx
+   sudo nginx -t
+   ```
+
+#### 3. Google Sheets não atualiza os dados
+* Verifique se a URL na planilha está correta: `=IMPORTDATA("https://kobo.gabrielcjr.website/data.csv")`.
+* Teste se o endpoint responde diretamente:
+  ```bash
+  curl -I https://kobo.gabrielcjr.website/data.csv
+  ```
+* O Google Sheets faz cache das requisições `IMPORTDATA` por cerca de 1 a 2 horas. Para forçar atualização imediata em uma planilha específica, adicione um parâmetro falso ao final da URL, por exemplo `=IMPORTDATA("https://kobo.gabrielcjr.website/data.csv?t=" & NOW())`.
+
+---
+
+## 6. Histórico de Versões e Decisões Técnicas
+
+| Data | Decisão Técnica / Mudança | Motivo |
+|---|---|---|
+| **Outubro/2026** | Criação do servidor nativo K3s compatível com OpenRosa | Substituição da infraestrutura paga/descontinuada do KoBoToolbox. |
+| **Outubro/2026** | Endpoint CSV e compatibilidade KoBo API v2 | Permitir leitura imediata no Google Sheets sem alterar fórmulas existentes. |
+| **Outubro/2026** | Omissão dos campos cidade e povoado no formulário de campo | Cidade e povoado agora são geridos de forma agregada posteriormente pela liderança. Mantidos no CSV como colunas em branco para retrocompatibilidade. |
+| **Outubro/2026** | Remoção de links do dashboard e backup local do formulário | Segurança da informação: missionários comuns não devem ver métricas gerais nem baixar bases locais. |
+| **Outubro/2026** | Purga automática de formulários enviados da memória local | Impedir que terceiros tenham acesso a dados sensíveis de cadastros anteriores no aparelho do missionário. |
+| **Outubro/2026** | Implementação de Live Polling (3s) no Dashboard | Permitir acompanhamento ao vivo de campanhas evangelísticas em telões e computadores da igreja sem necessidade de recarregar a página. |
