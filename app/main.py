@@ -15,7 +15,7 @@ from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .database import init_db, insert_submission, get_all_submissions, get_stats, parse_geopoint
+from .database import init_db, insert_submission, get_all_submissions, get_stats, parse_geopoint, get_setting, set_setting
 from .openrosa import (
     FORM_ID, FORM_NAME, FORM_VERSION, FORM_UUID, FORM_MD5,
     AUTH_USER, AUTH_PASS, check_credentials,
@@ -309,6 +309,9 @@ class WebSubmissionPayload(BaseModel):
     geopoint: Optional[str] = None
     observacoes: Optional[str] = None
     missionario: str
+    cidade: Optional[str] = None
+    povoado: Optional[str] = None
+    acao: Optional[str] = None
 
 @app.post("/api/submit")
 def api_submit(payload: WebSubmissionPayload):
@@ -329,9 +332,45 @@ def api_submit(payload: WebSubmissionPayload):
         missionario=payload.missionario,
         device_id="web-browser",
         submitted_by="renovamechurch",
-        source="web"
+        source="web",
+        cidade=payload.cidade,
+        povoado=payload.povoado,
+        acao=payload.acao
     )
     return {"status": "success", "id": inserted_id, "uuid": new_uuid}
+
+class ActionSettingPayload(BaseModel):
+    cidade: str
+    povoado: str
+    acao: Optional[str] = None
+
+@app.get("/api/admin/active-action")
+@app.get("/api/admin/get-active-action")
+def get_active_action_endpoint():
+    return {
+        "active_cidade": get_setting("active_cidade", "Cruz das Almas"),
+        "active_povoado": get_setting("active_povoado", "Centro"),
+        "active_acao": get_setting("active_acao", "Missão Cruz das Almas")
+    }
+
+@app.post("/api/admin/set-active-action")
+def set_active_action(payload: ActionSettingPayload, authorization: Optional[str] = Header(None)):
+    if authorization and not check_credentials(authorization):
+        return Response(
+            content="Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="KoBoToolbox"'}
+        )
+    set_setting("active_cidade", payload.cidade.strip())
+    set_setting("active_povoado", payload.povoado.strip())
+    if payload.acao:
+        set_setting("active_acao", payload.acao.strip())
+    return {
+        "status": "success",
+        "active_cidade": get_setting("active_cidade", "Cruz das Almas"),
+        "active_povoado": get_setting("active_povoado", "Centro"),
+        "active_acao": get_setting("active_acao", "Missão Cruz das Almas")
+    }
 
 # --- ADMIN DASHBOARD ---
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -351,11 +390,17 @@ def dashboard_page(request: Request, authorization: Optional[str] = Header(None)
 
     submissions = get_all_submissions()
     stats = get_stats()
+    active_cidade = get_setting("active_cidade", "Cruz das Almas")
+    active_povoado = get_setting("active_povoado", "Centro")
+    active_acao = get_setting("active_acao", "Missão Cruz das Almas")
 
     return templates.TemplateResponse(request=request, name="dashboard.html", context={
         "submissions": submissions,
         "stats": stats,
-        "base_url": base_url
+        "base_url": base_url,
+        "active_cidade": active_cidade,
+        "active_povoado": active_povoado,
+        "active_acao": active_acao
     })
 
 # --- EXPORTS: EXCEL (.xlsx), CSV, GEOJSON ---
@@ -518,6 +563,152 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
 
     return buf.getvalue()
 
+def format_campo_missionarios_csv(
+    submissions,
+    cidade: str = "Cruz das Almas",
+    povoado: str = "Centro",
+    date_format: str = "month_year",
+    layout: str = "clean",
+    formula_sep: str = ";",
+    delimiter: str = ","
+) -> str:
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=delimiter)
+
+    if layout == "exact_16":
+        # Estrutura de 16 colunas A..P para coincidir perfeitamente com a planilha onde I, K e N estão ocultas
+        headers = [
+            "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
+            "Gênero", "", "Recebeu a Jesus?", "", "Endereço ou referência",
+            "Observações", "", "Localizador", "Missionário(a)"
+        ]
+        writer.writerow(headers)
+        for s in submissions:
+            d_str = s.get("data_date") or ""
+            if d_str and len(d_str) >= 7:
+                parts = d_str.split("-")
+                if date_format == "month_year":
+                    d_val = f"{parts[1]}/{parts[0]}" if len(parts) >= 2 else d_str
+                elif date_format == "full":
+                    d_val = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else d_str
+                else:
+                    d_val = d_str
+            else:
+                d_val = d_str
+
+            tel = (s.get("telefone") or "").strip()
+            tel_digits = "".join(ch for ch in tel if ch.isdigit())
+            if tel_digits:
+                wa_formula = f'=HYPERLINK("https://api.whatsapp.com/send?phone=55{tel_digits}"{formula_sep} "Chamar no WhatsApp")'
+            else:
+                wa_formula = ""
+
+            lat = s.get("latitude")
+            lon = s.get("longitude")
+            if lat is not None and lon is not None and (lat != 0.0 or lon != 0.0):
+                map_formula = f'=HYPERLINK("https://www.google.com/maps?q={lat},{lon}"{formula_sep} "Ver no mapa")'
+            else:
+                map_formula = ""
+
+            # Resolução dinâmica: prioriza valor da ação gravado na submissão,
+            # permitindo também sobrescrita se o usuário passar cidade/povoado específicos na URL.
+            sub_cid = (s.get("cidade") or "").strip()
+            sub_pov = (s.get("povoado") or "").strip()
+
+            if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
+                row_cidade = cidade.strip()
+            else:
+                row_cidade = sub_cid or (cidade.strip() if cidade else "Cruz das Almas")
+
+            if povoado and povoado.strip() and povoado.strip() != "Centro":
+                row_povoado = povoado.strip()
+            else:
+                row_povoado = sub_pov or (povoado.strip() if povoado else "Centro")
+
+            writer.writerow([
+                d_val,
+                row_cidade,
+                row_povoado,
+                s.get("nome") or "",
+                s.get("idade") if s.get("idade") is not None else "",
+                tel,
+                wa_formula,
+                s.get("genero") or "",
+                "", # Coluna I (oculta)
+                s.get("recebeu_jesus") or "", # Coluna J
+                "", # Coluna K (oculta)
+                s.get("endereco") or "", # Coluna L
+                s.get("observacoes") or "", # Coluna M
+                s.get("geopoint") or "", # Coluna N (oculta com coordenadas brutas)
+                map_formula, # Coluna O
+                s.get("missionario") or "" # Coluna P
+            ])
+    else:
+        # Layout limpo com as 13 colunas correspondentes à visualização da tabela
+        headers = [
+            "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
+            "Gênero", "Recebeu a Jesus?", "Endereço ou referência", "Observações",
+            "Localizador", "Missionário(a)"
+        ]
+        writer.writerow(headers)
+        for s in submissions:
+            d_str = s.get("data_date") or ""
+            if d_str and len(d_str) >= 7:
+                parts = d_str.split("-")
+                if date_format == "month_year":
+                    d_val = f"{parts[1]}/{parts[0]}" if len(parts) >= 2 else d_str
+                elif date_format == "full":
+                    d_val = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else d_str
+                else:
+                    d_val = d_str
+            else:
+                d_val = d_str
+
+            tel = (s.get("telefone") or "").strip()
+            tel_digits = "".join(ch for ch in tel if ch.isdigit())
+            if tel_digits:
+                wa_formula = f'=HYPERLINK("https://api.whatsapp.com/send?phone=55{tel_digits}"{formula_sep} "Chamar no WhatsApp")'
+            else:
+                wa_formula = ""
+
+            lat = s.get("latitude")
+            lon = s.get("longitude")
+            if lat is not None and lon is not None and (lat != 0.0 or lon != 0.0):
+                map_formula = f'=HYPERLINK("https://www.google.com/maps?q={lat},{lon}"{formula_sep} "Ver no mapa")'
+            else:
+                map_formula = ""
+
+            sub_cid = (s.get("cidade") or "").strip()
+            sub_pov = (s.get("povoado") or "").strip()
+
+            if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
+                row_cidade = cidade.strip()
+            else:
+                row_cidade = sub_cid or (cidade.strip() if cidade else "Cruz das Almas")
+
+            if povoado and povoado.strip() and povoado.strip() != "Centro":
+                row_povoado = povoado.strip()
+            else:
+                row_povoado = sub_pov or (povoado.strip() if povoado else "Centro")
+
+            writer.writerow([
+                d_val,
+                row_cidade,
+                row_povoado,
+                s.get("nome") or "",
+                s.get("idade") if s.get("idade") is not None else "",
+                tel,
+                wa_formula,
+                s.get("genero") or "",
+                s.get("recebeu_jesus") or "",
+                s.get("endereco") or "",
+                s.get("observacoes") or "",
+                map_formula,
+                s.get("missionario") or ""
+            ])
+
+    return buf.getvalue()
+
 def format_kobo_json(submissions):
     results = []
     for idx, s in enumerate(submissions):
@@ -570,6 +761,46 @@ def serve_csv_response(labels: bool = False, delimiter: str = ","):
         }
     )
 
+# --- GOOGLE SHEETS "CAMPO MISSIONÁRIOS" SPECIALIZED CSV ENDPOINTS ---
+@app.get("/campo-missionarios.csv")
+@app.head("/campo-missionarios.csv")
+@app.get("/sheets.csv")
+@app.head("/sheets.csv")
+@app.get("/api/export/campo-missionarios.csv")
+@app.head("/api/export/campo-missionarios.csv")
+def get_campo_missionarios_csv(
+    cidade: Optional[str] = "Cruz das Almas",
+    povoado: Optional[str] = "Centro",
+    date_format: Optional[str] = "month_year",
+    layout: Optional[str] = "clean",
+    formula_sep: Optional[str] = ";",
+    delimiter: Optional[str] = ","
+):
+    if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
+        filtered = get_all_submissions(cidade=cidade, povoado=povoado if (povoado and povoado != "Centro") else None)
+        submissions = filtered if filtered else get_all_submissions()
+    else:
+        submissions = get_all_submissions()
+    csv_content = format_campo_missionarios_csv(
+        submissions,
+        cidade=cidade or "Cruz das Almas",
+        povoado=povoado or "Centro",
+        date_format=date_format or "month_year",
+        layout=layout or "clean",
+        formula_sep=formula_sep or ";",
+        delimiter=delimiter or ","
+    )
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'inline; filename="campo_missionarios.csv"',
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
+    )
+
 # --- GOOGLE SHEETS & KOBOTOOLBOX DATA CSV ENDPOINTS ---
 @app.get("/data.csv")
 @app.head("/data.csv")
@@ -589,8 +820,20 @@ def get_kobo_csv_endpoint(
     form_id: Optional[str] = None,
     labels: Optional[bool] = False,
     lang: Optional[str] = None,
+    format: Optional[str] = None,
+    view: Optional[str] = None,
+    cidade: Optional[str] = "Cruz das Almas",
+    povoado: Optional[str] = "Centro",
+    date_format: Optional[str] = "month_year",
+    layout: Optional[str] = "clean",
+    formula_sep: Optional[str] = ";",
     delimiter: Optional[str] = ","
 ):
+    if format in ("sheets", "campo_missionarios") or view in ("sheets", "campo_missionarios"):
+        return get_campo_missionarios_csv(
+            cidade=cidade, povoado=povoado, date_format=date_format,
+            layout=layout, formula_sep=formula_sep, delimiter=delimiter
+        )
     use_labels = labels or (lang in ("pt", "portugues", "labels", "human"))
     return serve_csv_response(labels=use_labels, delimiter=delimiter or ",")
 

@@ -403,8 +403,61 @@
         <span style="font-size:0.8rem;color:var(--text-muted);">Sincronização via IMPORTDATA</span>
       </div>
       <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.5;">
-        Para baixar os dados automaticamente no Google Sheets (exatamente como no KoBoToolbox gratuito), basta colar a fórmula abaixo na célula <strong>A1</strong> da sua planilha:
+        Escolha o modelo de sincronização para a sua planilha do Google Sheets:
       </p>
+
+      <!-- NOVO MODELO: CAMPO MISSIONÁRIOS -->
+      <div style="background:#0b1e17;border:1px solid #166534;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="background:#16a34a;color:#fff;font-size:0.75rem;font-weight:800;padding:2px 8px;border-radius:6px;">RECOMENDADO</span>
+            <strong style="color:#86efac;font-size:1rem;">Modelo "Campo Missionários" (Idêntico à sua Planilha)</strong>
+          </div>
+          <span style="font-size:0.78rem;color:#86efac;">Inclui colunas Cidade, Povoado, links WhatsApp e Google Maps</span>
+        </div>
+
+        <div style="background:#064e3b;border:1px solid #059669;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.83rem;color:#a7f3d0;line-height:1.4;">
+          📌 <strong>Como funciona:</strong> Os campos de <em>Cidade</em> e <em>Povoado</em> <strong>não são exibidos no formulário do missionário</strong> (para manter a coleta ágil e sem alterações no questionário de campo). Eles são agregados previamente aqui pela liderança para selecionar e filtrar as ações realizadas.
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:12px;align-items:flex-end;">
+          <div>
+            <label style="font-size:0.75rem;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px;">CIDADE DA AÇÃO:</label>
+            <input type="text" id="inputCidade" value="{{ active_cidade or 'Cruz das Almas' }}" oninput="updateCampoFormula()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:#94a3b8;font-weight:700;display:block;margin-bottom:4px;">POVOADO / BAIRRO:</label>
+            <input type="text" id="inputPovoado" value="{{ active_povoado or 'Centro' }}" oninput="updateCampoFormula()" style="width:100%;background:#0f172a;border:1px solid #334155;color:#fff;padding:8px 12px;border-radius:6px;font-size:0.88rem;">
+          </div>
+          <div>
+            <button class="btn btn-outline" onclick="saveServerAction()" id="btnSaveAction" style="white-space:nowrap;padding:8px 14px;font-size:0.82rem;">💾 Definir p/ Novos Registros</button>
+          </div>
+        </div>
+
+        <div class="setup-item" style="margin-bottom:10px;">
+          <span class="setup-label">Fórmula Específica da Ação (Cole na célula A1 da aba correspondente):</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="setup-code" id="formulaCampo" style="flex:1;color:#86efac;font-size:0.85rem;">=IMPORTDATA("{{ base_url }}/campo-missionarios.csv?cidade={{ active_cidade or 'Cruz das Almas' }}&povoado={{ active_povoado or 'Centro' }}")</span>
+            <button class="btn btn-success" onclick="copyFormula('formulaCampo')" style="white-space:nowrap;padding:8px 16px;">Copiar Fórmula</button>
+          </div>
+        </div>
+
+        <div class="setup-item" style="margin-bottom:10px;">
+          <span class="setup-label">Fórmula Geral (Todas as Ações / Cidades Consolidadas):</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="setup-code" id="formulaGeral" style="flex:1;color:#93c5fd;font-size:0.85rem;">=IMPORTDATA("{{ base_url }}/campo-missionarios.csv")</span>
+            <button class="btn btn-outline" onclick="copyFormula('formulaGeral')" style="white-space:nowrap;padding:8px 16px;">Copiar</button>
+          </div>
+        </div>
+
+        <div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:0.82rem;color:#cbd5e1;">
+            📲 <strong>Link p/ enviar aos missionários nesta ação:</strong>
+            <code id="linkMissionario" style="color:#38bdf8;margin-left:6px;">{{ base_url }}/?cidade={{ active_cidade or 'Cruz das Almas' }}&povoado={{ active_povoado or 'Centro' }}</code>
+          </div>
+          <button class="btn btn-outline" onclick="copyText('linkMissionario')" style="padding:4px 10px;font-size:0.78rem;">Copiar Link</button>
+        </div>
+      </div>
 
       <div class="setup-box">
         <div class="setup-item">
@@ -416,7 +469,7 @@
         </div>
 
         <div class="setup-item" style="margin-top:6px;">
-          <span class="setup-label">Fórmula com Títulos Amigáveis em Português</span>
+          <span class="setup-label">Fórmula Padrão com Títulos Amigáveis em Português</span>
           <div style="display:flex;gap:8px;align-items:center;">
             <span class="setup-code" id="formulaLabels" style="flex:1;color:#86efac;">=IMPORTDATA("{{ base_url }}/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv?labels=true")</span>
             <button class="btn btn-outline" onclick="copyFormula('formulaLabels')" style="white-space:nowrap;">Copiar</button>
@@ -424,9 +477,9 @@
         </div>
       </div>
 
-      <div style="font-size:0.83rem;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">
+      <div style="font-size:0.83rem;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;">
         <span>💡 <strong>Atualização automática:</strong> O Google Sheets recalcula e busca os novos registros periodicamente.</span>
-        <span>📄 <strong>URLs compatíveis:</strong> <code>{{ base_url }}/data.csv</code> ou <code>{{ base_url }}/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ.csv</code></span>
+        <span>🔗 <strong>URL Direta Campo Missionários:</strong> <a href="/campo-missionarios.csv" target="_blank" style="color:#38bdf8;text-decoration:none;">{{ base_url }}/campo-missionarios.csv</a></span>
       </div>
     </section>
 
@@ -554,6 +607,57 @@
       }).catch(() => {
         prompt("Copie a fórmula:", text);
       });
+    }
+
+    function copyText(id) {
+      const el = document.getElementById(id);
+      const text = el.innerText || el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copiado com sucesso!");
+      }).catch(() => {
+        prompt("Copie o texto:", text);
+      });
+    }
+
+    function updateCampoFormula() {
+      const rawC = (document.getElementById("inputCidade").value || "Cruz das Almas").trim();
+      const rawP = (document.getElementById("inputPovoado").value || "Centro").trim();
+      const c = encodeURIComponent(rawC);
+      const p = encodeURIComponent(rawP);
+      const baseUrl = "{{ base_url }}";
+      const formulaEl = document.getElementById("formulaCampo");
+      formulaEl.innerText = `=IMPORTDATA("${baseUrl}/campo-missionarios.csv?cidade=${c}&povoado=${p}")`;
+
+      const linkEl = document.getElementById("linkMissionario");
+      if (linkEl) {
+        linkEl.innerText = `${baseUrl}/?cidade=${c}&povoado=${p}`;
+      }
+    }
+
+    async function saveServerAction() {
+      const cidade = (document.getElementById("inputCidade").value || "Cruz das Almas").trim();
+      const povoado = (document.getElementById("inputPovoado").value || "Centro").trim();
+      const btn = document.getElementById("btnSaveAction");
+      btn.disabled = true;
+      btn.innerText = "Salvando...";
+
+      try {
+        const resp = await fetch("/api/admin/set-active-action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cidade, povoado })
+        });
+        if (resp.ok) {
+          alert(`✓ Ação ativa definida com sucesso!\nCidade: ${cidade}\nPovoado: ${povoado}\nNovas fichas coletadas serão vinculadas a esta ação.`);
+        } else {
+          alert("Erro ao salvar ação no servidor. Verifique autenticação.");
+        }
+      } catch (e) {
+        alert("Erro de conexão ao salvar ação: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "💾 Definir p/ Novos Registros";
+      }
     }
   </script>
 </body>

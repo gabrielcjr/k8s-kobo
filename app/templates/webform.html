@@ -796,6 +796,11 @@
         <div>
           <h1>Missionários Renova-me</h1>
           <p>Igreja Renova-me — Ficha de Cadastro & Coleta Missionária</p>
+          <div id="actionBanner" style="display:none;margin-top:6px;">
+            <span style="background:#eff6ff;color:#1e40af;font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:700;border:1px solid #bfdbfe;display:inline-flex;align-items:center;gap:4px;">
+              📍 <span id="actionBannerText">Ação: Cruz das Almas — Centro</span>
+            </span>
+          </div>
         </div>
         <a href="/dashboard" class="dashboard-top-btn" style="font-size:0.8rem;padding:6px 12px;background:#f8fafc;">
           📊 Ver Painel
@@ -1027,6 +1032,22 @@
         document.getElementById("missionarioInput").value = savedMissionary;
       }
 
+      // Action banner (cidade e povoado definidos previamente pela liderança)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCid = (urlParams.get("cidade") || localStorage.getItem("kobo_action_cidade") || "").trim();
+      const urlPov = (urlParams.get("povoado") || localStorage.getItem("kobo_action_povoado") || "").trim();
+      if (urlParams.get("cidade")) localStorage.setItem("kobo_action_cidade", urlParams.get("cidade"));
+      if (urlParams.get("povoado")) localStorage.setItem("kobo_action_povoado", urlParams.get("povoado"));
+
+      if (urlCid) {
+        const banner = document.getElementById("actionBanner");
+        const bannerText = document.getElementById("actionBannerText");
+        if (banner && bannerText) {
+          bannerText.textContent = `Ação: ${urlCid}${urlPov ? ' — ' + urlPov : ''}`;
+          banner.style.display = "block";
+        }
+      }
+
       window.addEventListener("online", handleOnlineStatus);
       window.addEventListener("offline", handleOnlineStatus);
       handleOnlineStatus();
@@ -1129,7 +1150,12 @@
       const fd = new FormData(form);
       const telClean = (document.getElementById("telefoneInput").value || "").replace(/\D/g, "");
 
-      return {
+      const urlParams = new URLSearchParams(window.location.search);
+      const cid = (urlParams.get("cidade") || localStorage.getItem("kobo_action_cidade") || "").trim();
+      const pov = (urlParams.get("povoado") || localStorage.getItem("kobo_action_povoado") || "").trim();
+      const acao = (urlParams.get("acao") || localStorage.getItem("kobo_action_name") || "").trim();
+
+      const payload = {
         data_date: fd.get("Data") || new Date().toISOString().split("T")[0],
         nome: (fd.get("Nome") || "").trim(),
         idade: fd.get("Idade") ? parseInt(fd.get("Idade")) : null,
@@ -1141,6 +1167,12 @@
         observacoes: (fd.get("Observacoes") || "").trim(),
         missionario: (fd.get("Nome_do_Mission_rio_a") || "").trim()
       };
+
+      if (cid) payload.cidade = cid;
+      if (pov) payload.povoado = pov;
+      if (acao) payload.acao = acao;
+
+      return payload;
     }
 
     // --- 4. SAVE DRAFT (SALVAR RASCUNHO) ---

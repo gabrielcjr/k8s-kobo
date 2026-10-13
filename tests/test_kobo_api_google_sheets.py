@@ -227,3 +227,135 @@ def test_excel_export_behavior(client, valid_auth_headers):
     # Direct export without auth (for Excel web query) also returns 200
     direct_res = client.get("/api/export/xlsx")
     assert direct_res.status_code == 200
+
+def test_campo_missionarios_csv_structure(client):
+    """
+    Verify /campo-missionarios.csv returns the exact columns and link formulas
+    corresponding to the 'Campo Missionários' Google Sheets table.
+    """
+    res = client.get("/campo-missionarios.csv")
+    assert res.status_code == 200
+    assert "text/csv" in res.headers["content-type"]
+    assert res.headers.get("access-control-allow-origin") == "*"
+    
+    rows = list(csv.reader(io.StringIO(res.text)))
+    assert len(rows) >= 2
+    header = rows[0]
+    expected_header = [
+        "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
+        "Gênero", "Recebeu a Jesus?", "Endereço ou referência", "Observações",
+        "Localizador", "Missionário(a)"
+    ]
+    assert header == expected_header
+
+    # Row 1 check
+    carlos_row = None
+    for r in rows[1:]:
+        if "Carlos Silva" in r:
+            carlos_row = r
+            break
+    assert carlos_row is not None
+    assert carlos_row[0] == "10/2026"  # Month/Year format
+    assert carlos_row[1] == "Cruz das Almas"
+    assert carlos_row[2] == "Centro"
+    assert carlos_row[3] == "Carlos Silva"
+    assert carlos_row[5] == "75999887766"
+    assert 'HYPERLINK("https://api.whatsapp.com/send?phone=5575999887766"' in carlos_row[6]
+    assert "Chamar no WhatsApp" in carlos_row[6]
+    assert carlos_row[8] == "Sim"
+    assert 'HYPERLINK("https://www.google.com/maps?q=' in carlos_row[11]
+    assert "Ver no mapa" in carlos_row[11]
+
+def test_campo_missionarios_custom_cidade_povoado_and_layout(client):
+    """
+    Verify customizing Cidade, Povoado, and 16-column layout matching A..P.
+    """
+    url = "/campo-missionarios.csv?cidade=Feira+de+Santana&povoado=Humildes&layout=exact_16"
+    res = client.get(url)
+    assert res.status_code == 200
+    rows = list(csv.reader(io.StringIO(res.text)))
+    header = rows[0]
+    assert len(header) == 16
+    assert header[0] == "Data"
+    assert header[1] == "Cidade"
+    assert header[2] == "Povoado"
+    assert header[9] == "Recebeu a Jesus?"
+    assert header[14] == "Localizador"
+    assert header[15] == "Missionário(a)"
+
+    carlos_row = None
+    for r in rows[1:]:
+        if "Carlos Silva" in r:
+            carlos_row = r
+            break
+    assert carlos_row is not None
+    assert carlos_row[1] == "Feira de Santana"
+    assert carlos_row[2] == "Humildes"
+
+def test_aggregated_action_metadata_without_form_fields(client, valid_auth_headers):
+    """
+    Verify that Cidade and Povoado are aggregated without being questions in the form:
+    1. Set active action via admin endpoint
+    2. Submit form payload without cidade/povoado -> inherits active action
+    3. Submit form payload with action context -> records specific action
+    4. Query /campo-missionarios.csv with and without filtering
+    """
+    # 1. Set active action
+    res_set = client.post(
+        "/api/admin/set-active-action",
+        json={"cidade": "Santo Antônio de Jesus", "povoado": "São Benedito"},
+        headers=valid_auth_headers
+    )
+    assert res_set.status_code == 200
+    assert res_set.json()["active_cidade"] == "Santo Antônio de Jesus"
+    assert res_set.json()["active_povoado"] == "São Benedito"
+
+    # 2. Submit form without explicit cidade/povoado
+    sub1 = client.post("/api/submit", json={
+        "nome": "Irmão Teste Agregado",
+        "idade": 40,
+        "telefone": "75988776655",
+        "genero": "Masculino",
+        "recebeu_jesus": "Sim",
+        "endereco": "Praça Central",
+        "geopoint": "-12.96 38.51 0.0 0.0",
+        "observacoes": "Coletado na nova ação",
+        "missionario": "Pr. Gabriel"
+    })
+    assert sub1.status_code == 200
+
+    # 3. Submit form with specific campaign context
+    sub2 = client.post("/api/submit", json={
+        "nome": "Irmã Maria Campanha",
+        "idade": 35,
+        "telefone": "75977665544",
+        "genero": "Feminino",
+        "recebeu_jesus": "Sim",
+        "missionario": "Missionária Débora",
+        "cidade": "Valença",
+        "povoado": "Guaibim"
+    })
+    assert sub2.status_code == 200
+
+    # 4. Check CSV output
+    res_csv = client.get("/campo-missionarios.csv")
+    assert res_csv.status_code == 200
+    rows = list(csv.reader(io.StringIO(res_csv.text)))
+    
+    # Sub1 should have inherited active action
+    sub1_row = next(r for r in rows if "Irmão Teste Agregado" in r)
+    assert sub1_row[1] == "Santo Antônio de Jesus"
+    assert sub1_row[2] == "São Benedito"
+
+    # Sub2 should have its specific action
+    sub2_row = next(r for r in rows if "Irmã Maria Campanha" in r)
+    assert sub2_row[1] == "Valença"
+    assert sub2_row[2] == "Guaibim"
+
+    # 5. Check filtered CSV output for Valença
+    res_valenca = client.get("/campo-missionarios.csv?cidade=Valença")
+    assert res_valenca.status_code == 200
+    rows_valenca = list(csv.reader(io.StringIO(res_valenca.text)))
+    valenca_names = [r[3] for r in rows_valenca[1:]]
+    assert "Irmã Maria Campanha" in valenca_names
+

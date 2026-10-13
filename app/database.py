@@ -44,12 +44,57 @@ def init_db():
         submitted_by TEXT DEFAULT 'renovamechurch',
         submission_time TEXT NOT NULL,
         source TEXT DEFAULT 'kobo_collect',
-        raw_xml TEXT
+        raw_xml TEXT,
+        cidade TEXT DEFAULT 'Cruz das Almas',
+        povoado TEXT DEFAULT 'Centro',
+        acao TEXT DEFAULT ''
     );
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_time ON submissions(submission_time);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_missionario ON submissions(missionario);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_recebeu_jesus ON submissions(recebeu_jesus);")
+
+    # Settings table for active action, city, and neighborhood
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    );
+    """)
+
+    # Check for existing table migration
+    cursor.execute("PRAGMA table_info(submissions)")
+    existing_cols = [r["name"] for r in cursor.fetchall()]
+    if "cidade" not in existing_cols:
+        cursor.execute("ALTER TABLE submissions ADD COLUMN cidade TEXT DEFAULT 'Cruz das Almas'")
+    if "povoado" not in existing_cols:
+        cursor.execute("ALTER TABLE submissions ADD COLUMN povoado TEXT DEFAULT 'Centro'")
+    if "acao" not in existing_cols:
+        cursor.execute("ALTER TABLE submissions ADD COLUMN acao TEXT DEFAULT ''")
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cidade ON submissions(cidade);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_povoado ON submissions(povoado);")
+
+    # Defaults for active action if not set
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('active_cidade', 'Cruz das Almas')")
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('active_povoado', 'Centro')")
+    cursor.execute("INSERT OR IGNORE INTO system_settings (key, value) VALUES ('active_acao', 'Missão Cruz das Almas')")
+
+    conn.commit()
+    conn.close()
+
+def get_setting(key: str, default: str = "") -> str:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM system_settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+def set_setting(key: str, value: str) -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)", (key, value))
     conn.commit()
     conn.close()
 
@@ -80,10 +125,17 @@ def insert_submission(
     device_id: Optional[str],
     submitted_by: str = "renovamechurch",
     source: str = "kobo_collect",
-    raw_xml: Optional[str] = None
+    raw_xml: Optional[str] = None,
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    acao: Optional[str] = None
 ) -> int:
     lat, lon, alt, acc = parse_geopoint(geopoint)
     sub_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    final_cidade = (cidade or "").strip() or get_setting("active_cidade", "Cruz das Almas")
+    final_povoado = (povoado or "").strip() or get_setting("active_povoado", "Centro")
+    final_acao = (acao or "").strip() or get_setting("active_acao", "Missão Cruz das Almas")
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -92,23 +144,39 @@ def insert_submission(
         uuid, form_id, version, data_date, nome, idade, telefone,
         genero, recebeu_jesus, endereco, geopoint, latitude, longitude,
         altitude, precision, observacoes, missionario, device_id,
-        submitted_by, submission_time, source, raw_xml
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        submitted_by, submission_time, source, raw_xml,
+        cidade, povoado, acao
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         uuid, form_id, version, data_date, nome, idade, telefone,
         genero, recebeu_jesus, endereco, geopoint, lat, lon,
         alt, acc, observacoes, missionario, device_id,
-        submitted_by, sub_time, source, raw_xml
+        submitted_by, sub_time, source, raw_xml,
+        final_cidade, final_povoado, final_acao
     ))
     conn.commit()
     inserted_id = cursor.lastrowid
     conn.close()
     return inserted_id
 
-def get_all_submissions() -> List[Dict[str, Any]]:
+def get_all_submissions(cidade: Optional[str] = None, povoado: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM submissions ORDER BY id DESC")
+    query = "SELECT * FROM submissions"
+    params = []
+    conditions = []
+    if cidade and cidade.strip():
+        conditions.append("cidade = ?")
+        params.append(cidade.strip())
+    if povoado and povoado.strip():
+        conditions.append("povoado = ?")
+        params.append(povoado.strip())
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY id DESC"
+    
+    cursor.execute(query, tuple(params))
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return rows
