@@ -159,7 +159,15 @@ def insert_submission(
     conn.close()
     return inserted_id
 
-def get_all_submissions(cidade: Optional[str] = None, povoado: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_all_submissions(
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None
+) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     query = "SELECT * FROM submissions"
@@ -171,6 +179,31 @@ def get_all_submissions(cidade: Optional[str] = None, povoado: Optional[str] = N
     if povoado and povoado.strip():
         conditions.append("povoado = ?")
         params.append(povoado.strip())
+    if recebeu_jesus and recebeu_jesus.strip():
+        conditions.append("recebeu_jesus = ?")
+        params.append(recebeu_jesus.strip())
+    if missionario and missionario.strip():
+        conditions.append("missionario = ?")
+        params.append(missionario.strip())
+    if genero and genero.strip():
+        conditions.append("genero = ?")
+        params.append(genero.strip())
+    if data_date and data_date.strip():
+        conditions.append("(data_date = ? OR submission_time LIKE ?)")
+        params.append(data_date.strip())
+        params.append(f"{data_date.strip()}%")
+    if search and search.strip():
+        s_term = f"%{search.strip().lower()}%"
+        conditions.append("""(
+            LOWER(COALESCE(nome, '')) LIKE ? OR
+            LOWER(COALESCE(telefone, '')) LIKE ? OR
+            LOWER(COALESCE(endereco, '')) LIKE ? OR
+            LOWER(COALESCE(observacoes, '')) LIKE ? OR
+            LOWER(COALESCE(missionario, '')) LIKE ? OR
+            LOWER(COALESCE(cidade, '')) LIKE ? OR
+            LOWER(COALESCE(povoado, '')) LIKE ?
+        )""")
+        params.extend([s_term] * 7)
     
     if conditions:
         query += " WHERE " + " AND ".join(conditions)

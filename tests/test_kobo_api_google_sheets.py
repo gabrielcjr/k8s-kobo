@@ -404,3 +404,113 @@ def test_aggregated_action_metadata_without_form_fields(client, valid_auth_heade
     rows_valenca = list(csv.reader(io.StringIO(res_valenca.text)))
     valenca_names = [r[3] for r in rows_valenca[1:]]
     assert "Irmã Maria Campanha" in valenca_names
+    assert "Irmão Teste Agregado" not in valenca_names
+
+def test_export_xlsx_filtered_by_cidade(client, valid_auth_headers):
+    """
+    Verify /api/export/xlsx correctly filters records by cidade and reflects active filters.
+    """
+    # Create two records in different cities
+    insert_submission(
+        uuid="uuid-xlsx-filter-ilheus-1",
+        form_id="a7FqboN3tiXKPo6hSc8MzJ",
+        version="32",
+        data_date="2026-10-13",
+        nome="Missionário Ilhéus Teste",
+        idade=29,
+        telefone="73988001122",
+        genero="Masculino",
+        recebeu_jesus="Sim",
+        endereco="Avenida Beira Mar",
+        geopoint="-14.79 -39.04 10.0 5.0",
+        observacoes="Cidade Ilhéus",
+        missionario="Pr. Lucas",
+        device_id="collect:test-ilheus",
+        cidade="Ilhéus",
+        povoado="Pontal"
+    )
+    insert_submission(
+        uuid="uuid-xlsx-filter-itabuna-1",
+        form_id="a7FqboN3tiXKPo6hSc8MzJ",
+        version="32",
+        data_date="2026-10-13",
+        nome="Missionário Itabuna Teste",
+        idade=33,
+        telefone="73999112233",
+        genero="Masculino",
+        recebeu_jesus="Sim",
+        endereco="Centro",
+        geopoint="-14.80 -39.27 10.0 5.0",
+        observacoes="Cidade Itabuna",
+        missionario="Pr. Marcos",
+        device_id="collect:test-itabuna",
+        cidade="Itabuna",
+        povoado="São Caetano"
+    )
+
+    # 1. Export Excel filtered for Ilhéus
+    res_ilheus = client.get("/api/export/xlsx?cidade=Ilhéus", headers=valid_auth_headers)
+    assert res_ilheus.status_code == 200
+    assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in res_ilheus.headers["content-type"]
+    assert "Ilheus" in res_ilheus.headers["content-disposition"]
+
+    wb_ilheus = openpyxl.load_workbook(io.BytesIO(res_ilheus.content))
+    ws_ilheus = wb_ilheus["Missionários Renova-me"]
+    header = [cell.value for cell in ws_ilheus[1]]
+    assert "Cidade" in header
+    assert "Povoado" in header
+    assert "Nome" in header
+
+    nome_col_idx = header.index("Nome") + 1
+    cidade_col_idx = header.index("Cidade") + 1
+    
+    ilheus_names = [ws_ilheus.cell(r, nome_col_idx).value for r in range(2, ws_ilheus.max_row + 1)]
+    ilheus_cities = [ws_ilheus.cell(r, cidade_col_idx).value for r in range(2, ws_ilheus.max_row + 1)]
+
+    assert "Missionário Ilhéus Teste" in ilheus_names
+    assert "Missionário Itabuna Teste" not in ilheus_names
+    assert all(c == "Ilhéus" for c in ilheus_cities if c)
+
+    # 2. Export Excel filtered for Itabuna
+    res_itabuna = client.get("/api/export/xlsx?cidade=Itabuna", headers=valid_auth_headers)
+    assert res_itabuna.status_code == 200
+    assert "Itabuna" in res_itabuna.headers["content-disposition"]
+
+    wb_itabuna = openpyxl.load_workbook(io.BytesIO(res_itabuna.content))
+    ws_itabuna = wb_itabuna["Missionários Renova-me"]
+    itabuna_names = [ws_itabuna.cell(r, nome_col_idx).value for r in range(2, ws_itabuna.max_row + 1)]
+
+    assert "Missionário Itabuna Teste" in itabuna_names
+    assert "Missionário Ilhéus Teste" not in itabuna_names
+
+def test_export_csv_filtered_by_cidade(client, valid_auth_headers):
+    """
+    Verify /data.csv and /api/export/csv correctly filter records by cidade.
+    """
+    # 1. Filtered data.csv (standard format)
+    res = client.get("/data.csv?cidade=Ilhéus", headers=valid_auth_headers)
+    assert res.status_code == 200
+    assert "Ilheus" in res.headers["content-disposition"]
+    rows = list(csv.reader(io.StringIO(res.text)))
+    assert len(rows) >= 2
+    header = rows[0]
+    nome_idx = header.index("Nome")
+    names = [r[nome_idx] for r in rows[1:]]
+
+    assert "Missionário Ilhéus Teste" in names
+    assert "Missionário Itabuna Teste" not in names
+
+    # 2. Filtered data.csv with labels
+    res_labels = client.get("/data.csv?cidade=Itabuna&labels=true", headers=valid_auth_headers)
+    assert res_labels.status_code == 200
+    assert "Itabuna" in res_labels.headers["content-disposition"]
+    rows_lbl = list(csv.reader(io.StringIO(res_labels.text)))
+    header_lbl = rows_lbl[0]
+    assert "Cidade" in header_lbl
+    assert "Povoado" in header_lbl
+    nome_lbl_idx = header_lbl.index("Nome")
+    names_lbl = [r[nome_lbl_idx] for r in rows_lbl[1:]]
+
+    assert "Missionário Itabuna Teste" in names_lbl
+    assert "Missionário Ilhéus Teste" not in names_lbl
+

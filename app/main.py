@@ -1,11 +1,18 @@
 import io
 import os
+import re
 import csv
 import json
 import uuid
+import unicodedata
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
+
+def sanitize_filename_part(text: str) -> str:
+    clean = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+    clean = re.sub(r"[^\w\-]", "_", clean).strip("_")
+    return clean or "export"
 
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, UploadFile, File, Form, Header
 from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse, JSONResponse
@@ -496,19 +503,36 @@ def api_delete_submission(submission_id: int, authorization: Optional[str] = Hea
 # --- EXPORTS: EXCEL (.xlsx), CSV, GEOJSON ---
 @app.get("/api/export/xlsx")
 @app.head("/api/export/xlsx")
-def export_xlsx(authorization: Optional[str] = Header(None)):
+def export_xlsx(
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None,
+    authorization: Optional[str] = Header(None)
+):
     auth_err = check_auth_or_401(authorization)
     if auth_err:
         return auth_err
 
-    submissions = get_all_submissions()
+    submissions = get_all_submissions(
+        cidade=cidade,
+        povoado=povoado,
+        recebeu_jesus=recebeu_jesus,
+        missionario=missionario,
+        genero=genero,
+        search=search,
+        data_date=data_date
+    )
     
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Missionários Renova-me"
 
     headers = [
-        "_id", "Data", "Nome", "Idade", "Telefone", "Genero",
+        "_id", "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Genero",
         "Recebeu_a_Jesus", "Endereco_ou_referencia", "Geolocalizador",
         "_Geolocalizador_latitude", "_Geolocalizador_longitude",
         "_Geolocalizador_altitude", "_Geolocalizador_precision",
@@ -531,6 +555,8 @@ def export_xlsx(authorization: Optional[str] = Header(None)):
         ws.append([
             s["id"],
             s["data_date"] or "",
+            s.get("cidade") or "",
+            s.get("povoado") or "",
             s["nome"] or "",
             s["idade"] if s["idade"] is not None else "",
             s["telefone"] or "",
@@ -561,11 +587,20 @@ def export_xlsx(authorization: Optional[str] = Header(None)):
     wb.save(buf)
     buf.seek(0)
 
-    filename = f"Missionarios_Renovame_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename_parts = ["Missionarios_Renovame"]
+    if cidade and cidade.strip():
+        safe_cidade = sanitize_filename_part(cidade.strip())
+        filename_parts.append(safe_cidade)
+    filename_parts.append(datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S'))
+    filename = f"{'_'.join(filename_parts)}.xlsx"
+
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
     )
 
 def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> str:
@@ -574,7 +609,7 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
 
     if labels:
         headers = [
-            "Data", "Nome", "Idade", "Telefone", "Gênero", "Recebeu Jesus?",
+            "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Gênero", "Recebeu Jesus?",
             "Endereço ou referência", "Geolocalizador", "_Geolocalizador_latitude",
             "_Geolocalizador_longitude", "_Geolocalizador_altitude", "_Geolocalizador_precision",
             "Observações", "Nome do Missionário(a)", "_id", "_uuid", "_submission_time", "_origem"
@@ -589,6 +624,8 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
 
             writer.writerow([
                 s.get("data_date") or "",
+                s.get("cidade") or "",
+                s.get("povoado") or "",
                 s.get("nome") or "",
                 s.get("idade") if s.get("idade") is not None else "",
                 s.get("telefone") or "",
@@ -609,7 +646,7 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
             ])
     else:
         headers = [
-            "start", "end", "today", "deviceid", "Data", "Nome", "Idade",
+            "start", "end", "today", "deviceid", "Data", "cidade", "povoado", "Nome", "Idade",
             "Telefone", "Genero", "Recebeu_a_Jesus", "Endereco_ou_referencia",
             "Geolocalizador", "_Geolocalizador_latitude", "_Geolocalizador_longitude",
             "_Geolocalizador_altitude", "_Geolocalizador_precision", "Observacoes",
@@ -624,6 +661,8 @@ def format_kobo_csv(submissions, labels: bool = False, delimiter: str = ",") -> 
                 s.get("data_date") or (s.get("submission_time") or "")[:10],
                 s.get("device_id") or "",
                 s.get("data_date") or "",
+                s.get("cidade") or "",
+                s.get("povoado") or "",
                 s.get("nome") or "",
                 s.get("idade") if s.get("idade") is not None else "",
                 s.get("telefone") or "",
@@ -950,15 +989,22 @@ def format_kobo_json(submissions):
         })
     return {"count": len(results), "next": None, "previous": None, "results": results}
 
-def serve_csv_response(labels: bool = False, delimiter: str = ","):
-    submissions = get_all_submissions()
+def serve_csv_response(
+    labels: bool = False,
+    delimiter: str = ",",
+    submissions: Optional[List[Dict[str, Any]]] = None,
+    filename: Optional[str] = None
+):
+    if submissions is None:
+        submissions = get_all_submissions()
     csv_content = format_kobo_csv(submissions, labels=labels, delimiter=delimiter)
+    fn = filename or "data.csv"
     return Response(
         content=csv_content,
         media_type="text/csv; charset=utf-8",
         headers={
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": 'inline; filename="data.csv"',
+            "Content-Disposition": f'inline; filename="{fn}"',
             "Access-Control-Allow-Origin": "*",
             "Cache-Control": "no-cache, no-store, must-revalidate"
         }
@@ -972,8 +1018,13 @@ def serve_csv_response(labels: bool = False, delimiter: str = ","):
 @app.get("/api/export/campo-missionarios.csv")
 @app.head("/api/export/campo-missionarios.csv")
 def get_campo_missionarios_csv(
-    cidade: Optional[str] = "Cruz das Almas",
-    povoado: Optional[str] = "Centro",
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None,
     date_format: Optional[str] = "month_year",
     layout: Optional[str] = "exact_16",
     start_row: Optional[int] = 510,
@@ -985,11 +1036,25 @@ def get_campo_missionarios_csv(
     if auth_err:
         return auth_err
 
-    if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
-        filtered = get_all_submissions(cidade=cidade, povoado=povoado if (povoado and povoado != "Centro") else None)
+    if cidade and cidade.strip():
+        filtered = get_all_submissions(
+            cidade=cidade.strip(),
+            povoado=povoado.strip() if povoado else None,
+            recebeu_jesus=recebeu_jesus,
+            missionario=missionario,
+            genero=genero,
+            search=search,
+            data_date=data_date
+        )
         submissions = filtered if filtered else get_all_submissions()
     else:
-        submissions = get_all_submissions()
+        submissions = get_all_submissions(
+            recebeu_jesus=recebeu_jesus,
+            missionario=missionario,
+            genero=genero,
+            search=search,
+            data_date=data_date
+        )
     csv_content = format_campo_missionarios_csv(
         submissions,
         cidade=cidade or "Cruz das Almas",
@@ -1000,12 +1065,16 @@ def get_campo_missionarios_csv(
         formula_sep=formula_sep or ";",
         delimiter=delimiter or ","
     )
+    filename = "campo_missionarios.csv"
+    if cidade and cidade.strip():
+        safe_cidade = sanitize_filename_part(cidade.strip())
+        filename = f"campo_missionarios_{safe_cidade}.csv"
     return Response(
         content=csv_content,
         media_type="text/csv; charset=utf-8",
         headers={
             "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": 'inline; filename="campo_missionarios.csv"',
+            "Content-Disposition": f'inline; filename="{filename}"',
             "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     )
@@ -1016,6 +1085,11 @@ def get_dashboard_copy_tsv(
     start_row: int = 510,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None,
     date_format: str = "month_year",
     formula_sep: str = ";",
     headers: bool = False,
@@ -1025,9 +1099,23 @@ def get_dashboard_copy_tsv(
     if auth_err:
         return auth_err
     if cidade and cidade.strip():
-        submissions = get_all_submissions(cidade=cidade.strip(), povoado=povoado.strip() if povoado else None)
+        submissions = get_all_submissions(
+            cidade=cidade.strip(),
+            povoado=povoado.strip() if povoado else None,
+            recebeu_jesus=recebeu_jesus,
+            missionario=missionario,
+            genero=genero,
+            search=search,
+            data_date=data_date
+        )
     else:
-        submissions = get_all_submissions()
+        submissions = get_all_submissions(
+            recebeu_jesus=recebeu_jesus,
+            missionario=missionario,
+            genero=genero,
+            search=search,
+            data_date=data_date
+        )
     tsv_content = format_campo_missionarios_tsv(
         submissions,
         cidade=cidade,
@@ -1037,12 +1125,16 @@ def get_dashboard_copy_tsv(
         formula_sep=formula_sep,
         include_headers=headers
     )
+    filename = "campo_missionarios.tsv"
+    if cidade and cidade.strip():
+        safe_cidade = sanitize_filename_part(cidade.strip())
+        filename = f"campo_missionarios_{safe_cidade}.tsv"
     return Response(
         content=tsv_content,
         media_type="text/tab-separated-values; charset=utf-8",
         headers={
             "Content-Type": "text/tab-separated-values; charset=utf-8",
-            "Content-Disposition": 'inline; filename="campo_missionarios.tsv"',
+            "Content-Disposition": f'inline; filename="{filename}"',
             "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     )
@@ -1068,8 +1160,13 @@ def get_kobo_csv_endpoint(
     lang: Optional[str] = None,
     format: Optional[str] = None,
     view: Optional[str] = None,
-    cidade: Optional[str] = "Cruz das Almas",
-    povoado: Optional[str] = "Centro",
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None,
     date_format: Optional[str] = "month_year",
     layout: Optional[str] = "exact_16",
     start_row: Optional[int] = 510,
@@ -1082,12 +1179,28 @@ def get_kobo_csv_endpoint(
         return auth_err
     if format in ("sheets", "campo_missionarios") or view in ("sheets", "campo_missionarios"):
         return get_campo_missionarios_csv(
-            cidade=cidade, povoado=povoado, date_format=date_format,
+            cidade=cidade, povoado=povoado,
+            recebeu_jesus=recebeu_jesus, missionario=missionario,
+            genero=genero, search=search, data_date=data_date,
+            date_format=date_format,
             layout=layout, start_row=start_row, formula_sep=formula_sep,
             delimiter=delimiter, authorization=authorization
         )
     use_labels = labels or (lang in ("pt", "portugues", "labels", "human"))
-    return serve_csv_response(labels=use_labels, delimiter=delimiter or ",")
+    submissions = get_all_submissions(
+        cidade=cidade,
+        povoado=povoado,
+        recebeu_jesus=recebeu_jesus,
+        missionario=missionario,
+        genero=genero,
+        search=search,
+        data_date=data_date
+    )
+    fn = "data.csv"
+    if cidade and cidade.strip():
+        safe_cidade = sanitize_filename_part(cidade.strip())
+        fn = f"data_{safe_cidade}.csv"
+    return serve_csv_response(labels=use_labels, delimiter=delimiter or ",", submissions=submissions, filename=fn)
 
 # --- GOOGLE SHEETS & KOBOTOOLBOX DATA JSON ENDPOINTS ---
 @app.get("/data.json")
@@ -1134,11 +1247,28 @@ def get_v1_data_array(form_id: str, authorization: Optional[str] = Header(None))
 # --- GEOJSON GIS EXPORT ---
 @app.get("/api/export/geojson")
 @app.head("/api/export/geojson")
-def export_geojson(authorization: Optional[str] = Header(None)):
+def export_geojson(
+    cidade: Optional[str] = None,
+    povoado: Optional[str] = None,
+    recebeu_jesus: Optional[str] = None,
+    missionario: Optional[str] = None,
+    genero: Optional[str] = None,
+    search: Optional[str] = None,
+    data_date: Optional[str] = None,
+    authorization: Optional[str] = Header(None)
+):
     auth_err = check_auth_or_401(authorization)
     if auth_err:
         return auth_err
-    submissions = get_all_submissions()
+    submissions = get_all_submissions(
+        cidade=cidade,
+        povoado=povoado,
+        recebeu_jesus=recebeu_jesus,
+        missionario=missionario,
+        genero=genero,
+        search=search,
+        data_date=data_date
+    )
     features = []
     for s in submissions:
         if s["latitude"] and s["longitude"] and s["latitude"] != 0.0:
@@ -1151,6 +1281,8 @@ def export_geojson(authorization: Optional[str] = Header(None)):
                 "properties": {
                     "id": s["id"],
                     "nome": s["nome"],
+                    "cidade": s.get("cidade"),
+                    "povoado": s.get("povoado"),
                     "telefone": s["telefone"],
                     "genero": s["genero"],
                     "recebeu_jesus": s["recebeu_jesus"],

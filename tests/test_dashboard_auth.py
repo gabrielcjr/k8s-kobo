@@ -205,5 +205,22 @@ def test_dashboard_api_delete_submission(client, valid_auth_headers):
     second_del = client.delete(f"/api/dashboard/submissions/{sub_id}", headers=valid_auth_headers)
     assert second_del.status_code == 404
 
+def test_dashboard_filtered_export_buttons_ui(client, valid_auth_headers):
+    """
+    Verify dashboard contains interactive export buttons (navbar and table header)
+    and JavaScript function updateExportLinks to dynamically adjust download links.
+    """
+    res = client.get("/dashboard", headers=valid_auth_headers)
+    assert res.status_code == 200
+    html = res.text
+
+    assert 'id="btnExportXlsx"' in html
+    assert 'id="btnExportCsv"' in html
+    assert 'id="btnTableExportXlsx"' in html
+    assert 'id="btnTableExportCsv"' in html
+    assert 'function updateExportLinks' in html
+    assert 'updateExportLinks(' in html
+
+
 
 

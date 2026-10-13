@@ -140,11 +140,19 @@ flowchart TD
     ```
 * **Botão Individual "Copiar Linha":** Cada ficha na tabela possui botão para cópia individual imediata, auto-incrementando o número da próxima linha na planilha.
 
+### 5. Exportações Dinâmicas Filtradas (.xlsx e .csv)
+* **Sincronização com os Filtros do Dashboard:** Ao filtrar os registros na tela por Cidade (`filterCidade`), Povoado (`filterPovoado`), Decisão por Jesus (`filterJesus`), Missionário (`filterMissionario`), Gênero (`filterGenero`) ou Busca Geral (`searchInput`), as exportações em Excel (`.xlsx`) e CSV (`.csv`) **refletem automaticamente apenas os dados filtrados**.
+* **URLs Parametrizadas Seguras:**
+  * `GET /api/export/xlsx?cidade=Valença` &rarr; Gera pasta de trabalho Excel contendo unicamente os cadastros da cidade selecionada, com colunas Cidade e Povoado integradas.
+  * `GET /data.csv?cidade=Valença` (ou `/api/export/csv?cidade=Valença`) &rarr; Gera arquivo CSV contendo apenas as fichas da cidade selecionada.
+  * Suporta filtros combinados (ex: `?cidade=...&povoado=...&recebeu_jesus=Sim&search=...`).
+* **Botões Interativos no Dashboard:** Links de exportação na barra superior e no cabeçalho da tabela se adaptam em tempo real mostrando a contagem de registros filtrados (ex: *Exportar Excel (12 filtrados)*).
+
 ---
 
 ## 🛠 Guia Operacional Rápido
 
-### Executar a Suíte de Testes (42 Testes)
+### Executar a Suíte de Testes (50 Testes)
 ```bash
 source /home/ubuntu/k8s_kobo/.venv/bin/activate
 pytest /home/ubuntu/k8s_kobo/tests -v

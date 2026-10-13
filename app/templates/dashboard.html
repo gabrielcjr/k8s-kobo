@@ -579,11 +579,14 @@
         <span class="live-dot"></span>
         <span id="liveStatusText">Ao Vivo • Atualização Automática</span>
       </div>
-      <a href="/api/export/xlsx" class="btn btn-success" download>
+      <a href="/api/export/xlsx" class="btn btn-success" id="btnExportXlsx" download title="Exportar dados em planilha Excel">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
-        Exportar Excel (.xlsx)
+        <span id="labelExportXlsx">Exportar Excel (.xlsx)</span>
       </a>
-      <a href="/data.csv" class="btn btn-outline" download>CSV</a>
+      <a href="/data.csv" class="btn btn-outline" id="btnExportCsv" download title="Exportar dados em formato CSV">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+        <span id="labelExportCsv">CSV</span>
+      </a>
       <a href="/x/PY2hbkKi" target="_blank" class="btn btn-primary">Abrir Formulário Web</a>
     </div>
   </header>
@@ -760,8 +763,18 @@
 
     <!-- Submissions Table -->
     <section class="panel">
-      <div class="panel-header">
+      <div class="panel-header" style="flex-wrap:wrap;gap:10px;">
         <h2 class="panel-title" id="tableTitle">Fichas Missionárias Coletadas ({{ submissions|length }})</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a href="/api/export/xlsx" class="btn btn-success" id="btnTableExportXlsx" download style="font-size:0.82rem;padding:6px 14px;" title="Exportar registros filtrados em Excel">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+            <span id="labelTableExportXlsx">Excel Filtrado</span>
+          </a>
+          <a href="/data.csv" class="btn btn-outline" id="btnTableExportCsv" download style="font-size:0.82rem;padding:6px 12px;" title="Exportar registros filtrados em CSV">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>
+            <span id="labelTableExportCsv">CSV Filtrado</span>
+          </a>
+        </div>
       </div>
 
       <!-- Filtros Dinâmicos -->
@@ -1250,6 +1263,63 @@
         } catch (e) {}
       } else {
         pointsCountEl.textContent = isFilterActive ? "Nenhum ponto no filtro atual" : "Aguardando primeiras coordenadas";
+      }
+
+      // 4. Update Excel and CSV Export links to reflect current active filters
+      updateExportLinks(subTotal, isFilterActive, fCidade, fPovoado, fJesus, fMissionario, fGenero, search);
+    }
+
+    function updateExportLinks(filteredCount, isFilterActive, fCidade, fPovoado, fJesus, fMissionario, fGenero, search) {
+      const params = new URLSearchParams();
+      if (fCidade) params.set("cidade", fCidade);
+      if (fPovoado) params.set("povoado", fPovoado);
+      if (fJesus) params.set("recebeu_jesus", fJesus);
+      if (fMissionario) params.set("missionario", fMissionario);
+      if (fGenero) params.set("genero", fGenero);
+      if (search) params.set("search", search);
+
+      const qs = params.toString() ? ("?" + params.toString()) : "";
+      const xlsxUrl = `/api/export/xlsx${qs}`;
+      const csvUrl = `/data.csv${qs}`;
+
+      const btnXlsx = document.getElementById("btnExportXlsx");
+      const btnCsv = document.getElementById("btnExportCsv");
+      const lblXlsx = document.getElementById("labelExportXlsx");
+      const lblCsv = document.getElementById("labelExportCsv");
+
+      if (btnXlsx) {
+        btnXlsx.href = xlsxUrl;
+        btnXlsx.title = isFilterActive ? `Baixar Excel filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em Excel';
+      }
+      if (btnCsv) {
+        btnCsv.href = csvUrl;
+        btnCsv.title = isFilterActive ? `Baixar CSV filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em CSV';
+      }
+      if (lblXlsx) {
+        lblXlsx.textContent = isFilterActive ? `Exportar Excel (${filteredCount} filtrados)` : 'Exportar Excel (.xlsx)';
+      }
+      if (lblCsv) {
+        lblCsv.textContent = isFilterActive ? `CSV (${filteredCount})` : 'CSV';
+      }
+
+      const btnTableXlsx = document.getElementById("btnTableExportXlsx");
+      const btnTableCsv = document.getElementById("btnTableExportCsv");
+      const lblTableXlsx = document.getElementById("labelTableExportXlsx");
+      const lblTableCsv = document.getElementById("labelTableExportCsv");
+
+      if (btnTableXlsx) {
+        btnTableXlsx.href = xlsxUrl;
+        btnTableXlsx.title = isFilterActive ? `Baixar Excel filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em Excel';
+      }
+      if (btnTableCsv) {
+        btnTableCsv.href = csvUrl;
+        btnTableCsv.title = isFilterActive ? `Baixar CSV filtrado com ${filteredCount} ficha(s)` : 'Baixar todas as fichas em CSV';
+      }
+      if (lblTableXlsx) {
+        lblTableXlsx.textContent = isFilterActive ? `Excel Filtrado (${filteredCount})` : `Excel (${filteredCount})`;
+      }
+      if (lblTableCsv) {
+        lblTableCsv.textContent = isFilterActive ? `CSV Filtrado (${filteredCount})` : `CSV (${filteredCount})`;
       }
     }
 

@@ -257,3 +257,5 @@ kubectl logs -n kobo -l app=kobo-server --tail=100
 | **Outubro/2026** | Purga automática de formulários enviados da memória local | Impedir que terceiros tenham acesso a dados sensíveis de cadastros anteriores no aparelho do missionário. |
 | **Outubro/2026** | Implementação de Live Polling (3s) no Dashboard | Permitir acompanhamento ao vivo de campanhas evangelísticas em telões e computadores da igreja sem necessidade de recarregar a página. |
 | **Outubro/2026** | Remoção da API aberta e fluxo seguro de Copiar & Colar para o Google Sheets | Segurança dos dados: fechar acesso público e desprotegido a contatos; geração automática de fórmulas exatas de WhatsApp (`=IF(ISBLANK(F510)...)`) e Mapa (`=IF(ISBLANK(N510)...)`). |
+| **Outubro/2026** | Exportações dinâmicas filtradas (.xlsx e .csv) sincronizadas com o Dashboard | Permitir que a liderança baixe planilhas e arquivos CSV contendo estritamente as fichas da cidade e filtros selecionados na interface. |
+
