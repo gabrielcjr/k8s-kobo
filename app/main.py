@@ -45,12 +45,45 @@ def on_startup():
 def healthz():
     return {"status": "ok", "app": "kobo-renovame", "time": datetime.utcnow().isoformat()}
 
+@app.get("/sw.js")
+@app.get("/x/offline-app-worker.js")
+def get_service_worker():
+    sw_path = os.path.join(STATIC_DIR, "sw.js")
+    if not os.path.exists(sw_path):
+        raise HTTPException(status_code=404, detail="Service worker not found")
+    with open(sw_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type="application/javascript; charset=utf-8",
+        headers={
+            "Content-Type": "application/javascript; charset=utf-8",
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
+    )
+
+@app.get("/manifest.json")
+def get_manifest_json():
+    manifest_path = os.path.join(STATIC_DIR, "manifest.json")
+    if not os.path.exists(manifest_path):
+        raise HTTPException(status_code=404, detail="Manifest not found")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type="application/manifest+json; charset=utf-8",
+        headers={
+            "Content-Type": "application/manifest+json; charset=utf-8",
+            "Cache-Control": "no-cache"
+        }
+    )
+
 # --- STATIC MEDIA ASSETS ---
 @app.get("/media/{filename}")
 def get_media(filename: str):
     file_path = os.path.join(STATIC_DIR, filename)
     if not os.path.exists(file_path):
-        # check unescaped
         import urllib.parse
         unescaped = urllib.parse.unquote(filename)
         file_path = os.path.join(STATIC_DIR, unescaped)

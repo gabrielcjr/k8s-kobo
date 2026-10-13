@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Missionários Renova-me</title>
+  <title>Missionários Renova-me (Enketo Offline)</title>
   <link rel="icon" type="image/png" href="/media/Banner_renovam_vermelho.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c91818">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Renova-me">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,6 +28,7 @@
       --success: #16a34a;
       --error: #dc2626;
       --warning: #f59e0b;
+      --blue: #2563eb;
     }
 
     * {
@@ -40,13 +46,66 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-bottom: 40px;
+      padding-bottom: 60px;
+    }
+
+    /* Floating Queue Pill in Top Corner */
+    .top-bar {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px 4px 16px;
+    }
+
+    .queue-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+      transition: all 0.2s;
+    }
+
+    .queue-toggle-btn:hover {
+      background: #1e293b;
+      transform: translateY(-1px);
+    }
+
+    .queue-badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .queue-badge.has-items {
+      background: var(--warning);
+      color: #0f172a;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
 
     .banner-container {
       width: 100%;
       max-width: 680px;
-      margin-top: 12px;
       padding: 0 16px;
     }
 
@@ -66,18 +125,18 @@
       padding: 16px;
     }
 
+    /* Header & Status */
     .form-header {
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 24px 20px;
+      padding: 22px 20px;
       margin-bottom: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       border: 1px solid var(--border);
-      position: relative;
     }
 
     .form-header h1 {
-      font-size: 1.6rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: var(--text-main);
       margin-bottom: 6px;
@@ -85,7 +144,15 @@
 
     .form-header p {
       color: var(--text-muted);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
     }
 
     .status-badge {
@@ -96,9 +163,6 @@
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 20px;
-      background: #e2e8f0;
-      color: #334155;
-      margin-top: 10px;
     }
     .status-badge.online {
       background: #dcfce7;
@@ -115,6 +179,21 @@
       background: currentColor;
     }
 
+    .editing-alert {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Question Cards */
     .card {
       background: var(--card-bg);
       border-radius: 14px;
@@ -122,12 +201,6 @@
       margin-bottom: 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       border: 1px solid var(--border);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .card:focus-within {
-      border-color: #cbd5e1;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
     .card-label {
@@ -217,7 +290,6 @@
       outline: none;
       display: grid;
       place-content: center;
-      transition: border-color 0.2s;
     }
 
     .option-card input[type="radio"]::before {
@@ -263,13 +335,7 @@
       transition: background 0.2s;
     }
 
-    .geo-btn:hover {
-      background: #1e293b;
-    }
-
-    .geo-btn:active {
-      transform: scale(0.99);
-    }
+    .geo-btn:hover { background: #1e293b; }
 
     .geo-result {
       margin-top: 12px;
@@ -290,23 +356,50 @@
       border: 1px solid var(--border);
     }
 
-    /* Submit Button */
+    /* Bottom Action Controls (Save Draft + Submit) */
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .draft-btn {
+      padding: 15px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .draft-btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
     .submit-btn {
-      width: 100%;
-      padding: 16px;
+      padding: 15px;
       background: var(--primary);
       color: #ffffff;
       border: none;
       border-radius: 12px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 800;
       cursor: pointer;
       box-shadow: 0 4px 14px rgba(201, 24, 24, 0.3);
-      transition: all 0.2s;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
+      transition: all 0.2s;
     }
 
     .submit-btn:hover {
@@ -314,13 +407,226 @@
       box-shadow: 0 6px 20px rgba(201, 24, 24, 0.4);
     }
 
-    .submit-btn:disabled {
-      background: #94a3b8;
-      box-shadow: none;
+    /* Side Slider / Drawer (Fila / Queue) */
+    .drawer-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+      z-index: 10000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      box-shadow: -4px 0 25px rgba(0,0,0,0.15);
+      z-index: 10001;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+    }
+
+    .drawer-header h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .drawer-content {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .queue-info {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .queue-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .queue-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .queue-card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .queue-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .queue-chip.draft { background: #fef3c7; color: #92400e; }
+    .queue-chip.queued { background: #dbeafe; color: #1e40af; }
+    .queue-chip.uploaded { background: #dcfce7; color: #166534; }
+
+    .queue-card-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .queue-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .queue-action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text-main);
+    }
+    .queue-action-btn.edit {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+    }
+    .queue-action-btn.delete {
+      background: #fff1f2;
+      border-color: #fecdd3;
+      color: #be123c;
+    }
+
+    .drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .drawer-btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .drawer-btn-primary:disabled {
+      background: #cbd5e1;
       cursor: not-allowed;
     }
 
-    /* Success / Feedback Overlay */
+    .drawer-btn-secondary {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Modal */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -356,15 +662,16 @@
     }
 
     .modal-card h2 {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       margin-bottom: 8px;
     }
 
     .modal-card p {
       color: var(--text-muted);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       margin-bottom: 24px;
+      line-height: 1.4;
     }
 
     .btn-secondary {
@@ -397,6 +704,17 @@
 </head>
 <body>
 
+  <!-- Top Bar with Queue Toggle -->
+  <div class="top-bar">
+    <div id="connStatus" class="status-badge online">
+      <span class="dot"></span> Online (Conectado)
+    </div>
+    <button type="button" class="queue-toggle-btn" onclick="openDrawer()">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h5v2H4v-2z"/></svg>
+      Fila <span class="queue-badge" id="queueBadge">0</span>
+    </button>
+  </div>
+
   <div class="banner-container">
     <img src="/media/Banner_renovam_vermelho.png" alt="Banner Renova-me" class="banner-img">
   </div>
@@ -405,9 +723,12 @@
     <div class="form-header">
       <h1>Missionários Renova-me</h1>
       <p>Igreja Renova-me — Ficha de Cadastro & Coleta Missionária</p>
-      <div id="connStatus" class="status-badge online">
-        <span class="dot"></span> Online (Conectado)
-      </div>
+    </div>
+
+    <!-- Alert when resuming a draft -->
+    <div class="editing-alert" id="editingAlert">
+      <span id="editingAlertText">Editando rascunho salvo...</span>
+      <button type="button" onclick="cancelEditing()" style="background:none;border:none;color:#92400e;font-weight:700;cursor:pointer;">Cancelar</button>
     </div>
 
     <form id="missionariosForm">
@@ -510,9 +831,17 @@
         <input type="text" id="missionarioInput" name="Nome_do_Mission_rio_a" placeholder="Seu nome completo" required>
       </div>
 
-      <button type="submit" class="submit-btn" id="submitBtn">
-        Enviar Ficha Missionária
-      </button>
+      <!-- Action Buttons (Save Draft + Submit) -->
+      <div class="form-actions">
+        <button type="button" class="draft-btn" onclick="saveAsDraft()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Salvar Rascunho
+        </button>
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Finalizar e Enviar
+        </button>
+      </div>
     </form>
 
     <div class="footer">
@@ -520,49 +849,132 @@
     </div>
   </div>
 
-  <!-- Modal Sucesso -->
+  <!-- Side Slider / Drawer (Queue & Drafts) -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h2>
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h5v2H4v-2z"/></svg>
+        Fila de Registros
+      </h2>
+      <button class="drawer-close-btn" onclick="closeDrawer()">&times;</button>
+    </div>
+
+    <div class="drawer-content">
+      <div class="queue-info">
+        <strong>Armazenamento Local (Offline):</strong><br>
+        Os registros ficam salvos com segurança no aparelho mesmo sem internet. Os itens marcados para envio são transmitidos automaticamente assim que a conexão retornar.
+      </div>
+
+      <div class="queue-list" id="queueList">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button type="button" class="drawer-btn-primary" id="uploadQueueBtn" onclick="manualUploadQueue()">
+        Enviar Registros da Fila Agora
+      </button>
+      <button type="button" class="drawer-btn-secondary" onclick="exportBackupJson()">
+        Exportar Backup Local (JSON)
+      </button>
+      <button type="button" class="drawer-btn-secondary" onclick="clearUploadedRecords()" style="color:#ef4444;border-color:#fee2e2;">
+        Limpar Itens Já Enviados
+      </button>
+    </div>
+  </aside>
+
+  <!-- Success Modal -->
   <div class="modal-overlay" id="successModal">
     <div class="modal-card">
       <div class="modal-icon">✓</div>
-      <h2>Ficha Enviada com Sucesso!</h2>
+      <h2 id="successTitle">Ficha Enviada com Sucesso!</h2>
       <p id="successDesc">A ficha de cadastro foi registrada e salva no servidor da Igreja Renova-me.</p>
       <button class="submit-btn" onclick="resetForm()">Cadastrar Outra Pessoa</button>
       <a href="/dashboard" class="btn-secondary">Ver Painel de Coletas</a>
     </div>
   </div>
 
+  <!-- Toast -->
+  <div class="toast" id="toastMessage"></div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // --- 1. SERVICE WORKER REGISTRATION (OFFLINE PWA) ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then((reg) => {
+            console.log('[PWA] Service Worker registrado com sucesso:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] Falha ao registrar Service Worker:', err);
+          });
+      });
+    }
+
+    // --- 2. STATE & STORAGE ---
+    const STORAGE_KEY = "renovame_offline_records_v2";
     let miniMapInstance = null;
     let mapMarker = null;
+    let currentEditingId = null;
 
-    // Set today date by default
+    function getRecords() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      updateQueueUI();
+    }
+
+    // --- 3. INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("dataInput").value = today;
 
-      // Remember missionary name in localStorage for convenience
       const savedMissionary = localStorage.getItem("saved_missionary_name");
       if (savedMissionary) {
         document.getElementById("missionarioInput").value = savedMissionary;
       }
 
-      // Check online / offline
-      window.addEventListener("online", updateConnStatus);
-      window.addEventListener("offline", updateConnStatus);
-      updateConnStatus();
+      window.addEventListener("online", handleOnlineStatus);
+      window.addEventListener("offline", handleOnlineStatus);
+      handleOnlineStatus();
+
+      updateQueueUI();
+
+      // Check auto-sync every 30 seconds
+      setInterval(() => {
+        if (navigator.onLine) {
+          syncPendingQueue(false);
+        }
+      }, 30000);
     });
 
-    function updateConnStatus() {
+    function handleOnlineStatus() {
       const el = document.getElementById("connStatus");
       if (navigator.onLine) {
         el.className = "status-badge online";
         el.innerHTML = '<span class="dot"></span> Online (Conectado)';
-        syncOfflineQueue();
+        syncPendingQueue(false);
       } else {
         el.className = "status-badge offline";
-        el.innerHTML = '<span class="dot"></span> Offline (Salvará localmente)';
+        el.innerHTML = '<span class="dot"></span> Offline (Modo Remoto / Sem Internet)';
       }
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toastMessage");
+      toast.innerText = text;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3500);
     }
 
     function selectRadio(card) {
@@ -588,7 +1000,7 @@
       btn.disabled = true;
       btn.innerHTML = "Obtendo sinal GPS...";
       res.style.display = "block";
-      res.innerHTML = "Buscando satélites / sinal de rede...";
+      res.innerHTML = "Buscando coordenadas de satélite...";
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -599,7 +1011,6 @@
           const alt = pos.coords.altitude || 0.0;
           const acc = pos.coords.accuracy || 10.0;
 
-          // OpenRosa geopoint format: lat lon alt accuracy
           const geopointVal = `${lat} ${lon} ${alt} ${acc}`;
           hiddenInput.value = geopointVal;
 
@@ -621,21 +1032,70 @@
         (err) => {
           btn.disabled = false;
           btn.innerHTML = "Tentar Obter GPS Novamente";
-          res.innerHTML = `<span style="color:var(--error);">Não foi possível obter GPS (${err.message}). Preencha mesmo assim se necessário.</span>`;
-          // Default placeholder point if GPS fails so submission doesn't block
+          res.innerHTML = `<span style="color:var(--error);">Não foi possível obter sinal (${err.message}). Pode prosseguir.</span>`;
           hiddenInput.value = "0.0 0.0 0.0 999.0";
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     }
 
-    // Form Submission
+    function getFormDataAsObject() {
+      const form = document.getElementById("missionariosForm");
+      const fd = new FormData(form);
+      const telClean = (document.getElementById("telefoneInput").value || "").replace(/\D/g, "");
+
+      return {
+        data_date: fd.get("Data") || new Date().toISOString().split("T")[0],
+        nome: (fd.get("Nome") || "").trim(),
+        idade: fd.get("Idade") ? parseInt(fd.get("Idade")) : null,
+        telefone: telClean,
+        genero: fd.get("Genero") || "",
+        recebeu_jesus: fd.get("Recebeu_a_Jesus") || "",
+        endereco: (fd.get("Endereco_ou_referencia") || "").trim(),
+        geopoint: fd.get("Geolocalizador") || "0.0 0.0 0.0 999.0",
+        observacoes: (fd.get("Observacoes") || "").trim(),
+        missionario: (fd.get("Nome_do_Mission_rio_a") || "").trim()
+      };
+    }
+
+    // --- 4. SAVE DRAFT (SALVAR RASCUNHO) ---
+    function saveAsDraft() {
+      const data = getFormDataAsObject();
+      const records = getRecords();
+      const now = new Date().toISOString();
+
+      if (data.missionario) {
+        localStorage.setItem("saved_missionary_name", data.missionario);
+      }
+
+      if (currentEditingId) {
+        const item = records.find(r => r.id === currentEditingId);
+        if (item) {
+          item.data = data;
+          item.status = "draft";
+          item.updated_at = now;
+        }
+      } else {
+        const newRecord = {
+          id: "draft-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6),
+          created_at: now,
+          updated_at: now,
+          status: "draft",
+          data: data
+        };
+        records.unshift(newRecord);
+      }
+
+      saveRecords(records);
+      cancelEditing();
+      showToast("✓ Rascunho salvo no aparelho com sucesso!");
+    }
+
+    // --- 5. FORM SUBMISSION (FINALIZAR E ENVIAR) ---
     document.getElementById("missionariosForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const form = e.target;
       const submitBtn = document.getElementById("submitBtn");
 
-      // Validate phone: 11 digits
       const telClean = document.getElementById("telefoneInput").value.replace(/\D/g, "");
       if (telClean.length !== 11) {
         alert("O telefone deve conter exatamente 11 números com DDD (Ex: 75988888888)");
@@ -643,43 +1103,51 @@
         return;
       }
 
-      // Check GPS
       if (!document.getElementById("geopointInput").value) {
-        // Fallback default
         document.getElementById("geopointInput").value = "0.0 0.0 0.0 999.0";
       }
 
-      const formData = new FormData(form);
-      const payload = {
-        data_date: formData.get("Data"),
-        nome: formData.get("Nome"),
-        idade: parseInt(formData.get("Idade")),
-        telefone: telClean,
-        genero: formData.get("Genero"),
-        recebeu_jesus: formData.get("Recebeu_a_Jesus"),
-        endereco: formData.get("Endereco_ou_referencia") || "",
-        geopoint: formData.get("Geolocalizador"),
-        observacoes: formData.get("Observacoes") || "",
-        missionario: formData.get("Nome_do_Mission_rio_a")
-      };
-
-      // Save missionary name
+      const payload = getFormDataAsObject();
       if (payload.missionario) {
         localStorage.setItem("saved_missionary_name", payload.missionario);
       }
 
       submitBtn.disabled = true;
-      submitBtn.innerHTML = "Enviando ficha...";
+      submitBtn.innerHTML = "Processando...";
+
+      const records = getRecords();
+      const now = new Date().toISOString();
+      let recordId = currentEditingId;
+
+      if (!recordId) {
+        recordId = "sub-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+        records.unshift({
+          id: recordId,
+          created_at: now,
+          updated_at: now,
+          status: "queued",
+          data: payload
+        });
+      } else {
+        const existing = records.find(r => r.id === recordId);
+        if (existing) {
+          existing.data = payload;
+          existing.status = "queued";
+          existing.updated_at = now;
+        }
+      }
+      saveRecords(records);
 
       if (!navigator.onLine) {
-        // Save to offline queue
-        saveToOfflineQueue(payload);
-        showSuccessModal(true);
+        // Offline -> save to queue, confirm and reset
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "Enviar Ficha Missionária";
+        submitBtn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Finalizar e Enviar';
+        showSuccessModal(true);
+        cancelEditing();
         return;
       }
 
+      // Online -> attempt upload
       try {
         const resp = await fetch("/api/submit", {
           method: "POST",
@@ -688,27 +1156,39 @@
         });
 
         if (!resp.ok) {
-          throw new Error("Erro do servidor: " + resp.status);
+          throw new Error("Servidor retornou status " + resp.status);
         }
 
+        // Mark as uploaded
+        const currentRecords = getRecords();
+        const item = currentRecords.find(r => r.id === recordId);
+        if (item) {
+          item.status = "uploaded";
+          saveRecords(currentRecords);
+        }
+
+        cancelEditing();
         showSuccessModal(false);
       } catch (err) {
-        console.warn("Falha no envio online, salvando na fila offline:", err);
-        saveToOfflineQueue(payload);
+        console.warn("Falha no envio online, mantido na fila offline:", err);
         showSuccessModal(true);
+        cancelEditing();
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = "Enviar Ficha Missionária";
+        submitBtn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Finalizar e Enviar';
       }
     });
 
     function showSuccessModal(isOffline) {
       const modal = document.getElementById("successModal");
+      const title = document.getElementById("successTitle");
       const desc = document.getElementById("successDesc");
       if (isOffline) {
-        desc.textContent = "Ficha salva com sucesso na memória do aparelho! Será enviada automaticamente assim que a conexão retornar.";
+        title.textContent = "Ficha Salva na Fila (Offline)!";
+        desc.textContent = "Você está sem conexão ou em área remota. A ficha foi salva com segurança na fila do aparelho e será enviada automaticamente assim que a internet retornar.";
       } else {
-        desc.textContent = "A ficha de cadastro foi registrada e salva no servidor da Igreja Renova-me.";
+        title.textContent = "Ficha Enviada com Sucesso!";
+        desc.textContent = "A ficha de cadastro foi transmitida e registrada no servidor da Igreja Renova-me.";
       }
       modal.style.display = "grid";
     }
@@ -719,40 +1199,240 @@
       document.getElementById("telefoneInput").value = "";
       document.getElementById("enderecoInput").value = "";
       document.getElementById("observacoesInput").value = "";
+      document.getElementById("geopointInput").value = "";
+      document.getElementById("geoResult").style.display = "none";
+      document.getElementById("miniMap").style.display = "none";
       document.querySelectorAll('input[type="radio"]').forEach(r => {
         r.checked = false;
         r.closest('.option-card').classList.remove('selected');
       });
       document.getElementById("successModal").style.display = "none";
+      cancelEditing();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function saveToOfflineQueue(item) {
-      let queue = JSON.parse(localStorage.getItem("renovame_offline_queue") || "[]");
-      queue.push(item);
-      localStorage.setItem("renovame_offline_queue", JSON.stringify(queue));
+    // --- 6. DRAWER (FILA / QUEUE) UI ---
+    function openDrawer() {
+      document.getElementById("drawerOverlay").classList.add("active");
+      document.getElementById("drawer").classList.add("active");
+      renderQueueList();
     }
 
-    async function syncOfflineQueue() {
-      let queue = JSON.parse(localStorage.getItem("renovame_offline_queue") || "[]");
-      if (queue.length === 0) return;
+    function closeDrawer() {
+      document.getElementById("drawerOverlay").classList.remove("active");
+      document.getElementById("drawer").classList.remove("active");
+    }
 
-      console.log(`Enviando ${queue.length} fichas pendentes da fila offline...`);
-      const remaining = [];
-      for (const item of queue) {
-        try {
-          await fetch("/api/submit", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(item)
-          });
-        } catch (e) {
-          remaining.push(item);
+    function updateQueueUI() {
+      const records = getRecords();
+      const pending = records.filter(r => r.status === "queued" || r.status === "draft");
+      const badge = document.getElementById("queueBadge");
+      badge.innerText = pending.length;
+      if (pending.length > 0) {
+        badge.classList.add("has-items");
+      } else {
+        badge.classList.remove("has-items");
+      }
+      renderQueueList();
+    }
+
+    function renderQueueList() {
+      const listEl = document.getElementById("queueList");
+      if (!listEl) return;
+      const records = getRecords();
+
+      if (records.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 10px;">Nenhum registro armazenado no aparelho.</div>';
+        return;
+      }
+
+      listEl.innerHTML = records.map(r => {
+        const d = r.data || {};
+        const title = d.nome ? d.nome : "<em>(Rascunho sem nome)</em>";
+        const dateStr = new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + (d.data_date || '');
+        let chipLabel = "Rascunho";
+        let chipClass = "draft";
+        if (r.status === "queued") { chipLabel = "Pronto para Enviar"; chipClass = "queued"; }
+        if (r.status === "uploaded") { chipLabel = "Enviado ✓"; chipClass = "uploaded"; }
+
+        return `
+          <div class="queue-card">
+            <div class="queue-card-top">
+              <span class="queue-card-title">${title}</span>
+              <span class="queue-chip ${chipClass}">${chipLabel}</span>
+            </div>
+            <div class="queue-card-meta">
+              <span><strong>Horário:</strong> ${dateStr}</span>
+              <span><strong>Telefone:</strong> ${d.telefone || '-'}</span>
+              <span><strong>Missionário:</strong> ${d.missionario || '-'}</span>
+            </div>
+            <div class="queue-card-actions">
+              <button type="button" class="queue-action-btn edit" onclick="loadRecordToEdit('${r.id}')">Editar</button>
+              ${r.status === "queued" && navigator.onLine ? `<button type="button" class="queue-action-btn" onclick="uploadSingleRecord('${r.id}')">Enviar Agora</button>` : ''}
+              <button type="button" class="queue-action-btn delete" onclick="deleteRecord('${r.id}')">Excluir</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadRecordToEdit(id) {
+      const records = getRecords();
+      const item = records.find(r => r.id === id);
+      if (!item) return;
+
+      const d = item.data;
+      currentEditingId = item.id;
+
+      document.getElementById("dataInput").value = d.data_date || "";
+      document.getElementById("nomeInput").value = d.nome || "";
+      document.getElementById("idadeInput").value = d.idade || "";
+      document.getElementById("telefoneInput").value = d.telefone || "";
+      document.getElementById("enderecoInput").value = d.endereco || "";
+      document.getElementById("observacoesInput").value = d.observacoes || "";
+      document.getElementById("missionarioInput").value = d.missionario || "";
+
+      // Radios
+      document.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.checked = false;
+        r.closest('.option-card').classList.remove('selected');
+      });
+
+      if (d.genero) {
+        const gInp = document.querySelector(`input[name="Genero"][value="${d.genero}"]`);
+        if (gInp) {
+          gInp.checked = true;
+          gInp.closest('.option-card').classList.add('selected');
         }
       }
-      localStorage.setItem("renovame_offline_queue", JSON.stringify(remaining));
-      if (remaining.length === 0) {
-        console.log("Todas as fichas offline foram sincronizadas com sucesso!");
+
+      if (d.recebeu_jesus) {
+        const jInp = document.querySelector(`input[name="Recebeu_a_Jesus"][value="${d.recebeu_jesus}"]`);
+        if (jInp) {
+          jInp.checked = true;
+          jInp.closest('.option-card').classList.add('selected');
+        }
+      }
+
+      if (d.geopoint) {
+        document.getElementById("geopointInput").value = d.geopoint;
+        document.getElementById("geoResult").style.display = "block";
+        document.getElementById("geoResult").innerHTML = `<strong>Coordenadas salvas:</strong> ${d.geopoint}`;
+      }
+
+      // Show editing banner
+      const alertEl = document.getElementById("editingAlert");
+      document.getElementById("editingAlertText").innerText = `Editando: ${d.nome || 'Rascunho'}`;
+      alertEl.style.display = "flex";
+
+      closeDrawer();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast("Rascunho carregado nos campos.");
+    }
+
+    function cancelEditing() {
+      currentEditingId = null;
+      document.getElementById("editingAlert").style.display = "none";
+    }
+
+    function deleteRecord(id) {
+      if (!confirm("Tem certeza que deseja excluir este registro local?")) return;
+      const records = getRecords().filter(r => r.id !== id);
+      saveRecords(records);
+      if (currentEditingId === id) cancelEditing();
+      showToast("Registro removido.");
+    }
+
+    function clearUploadedRecords() {
+      const records = getRecords().filter(r => r.status !== "uploaded");
+      saveRecords(records);
+      showToast("Registros já enviados foram removidos da memória local.");
+    }
+
+    function exportBackupJson() {
+      const records = getRecords();
+      const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `renovame_backup_offline_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // --- 7. SYNC ENGINE (ENVIO DA FILA QUANDO ONLINE) ---
+    async function syncPendingQueue(showNotification = true) {
+      if (!navigator.onLine) return;
+      const records = getRecords();
+      const queued = records.filter(r => r.status === "queued");
+
+      if (queued.length === 0) {
+        if (showNotification) showToast("Nenhuma ficha pendente para envio.");
+        return;
+      }
+
+      console.log(`[AutoSync] Enviando ${queued.length} fichas pendentes da fila...`);
+      let uploadedCount = 0;
+
+      for (const item of queued) {
+        try {
+          const resp = await fetch("/api/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item.data)
+          });
+          if (resp.ok) {
+            item.status = "uploaded";
+            uploadedCount++;
+          }
+        } catch (err) {
+          console.warn("[AutoSync] Falha ao enviar item:", item.id, err);
+        }
+      }
+
+      if (uploadedCount > 0) {
+        saveRecords(records);
+        showToast(`✓ ${uploadedCount} ficha(s) sincronizada(s) com sucesso!`);
+      }
+    }
+
+    async function manualUploadQueue() {
+      if (!navigator.onLine) {
+        alert("Você continua sem internet no momento. As fichas permanecem salvas na fila e serão enviadas automaticamente assim que o sinal retornar.");
+        return;
+      }
+      const btn = document.getElementById("uploadQueueBtn");
+      btn.disabled = true;
+      btn.innerText = "Sincronizando...";
+      await syncPendingQueue(true);
+      btn.disabled = false;
+      btn.innerText = "Enviar Registros da Fila Agora";
+    }
+
+    async function uploadSingleRecord(id) {
+      if (!navigator.onLine) {
+        alert("Você está offline no momento.");
+        return;
+      }
+      const records = getRecords();
+      const item = records.find(r => r.id === id);
+      if (!item) return;
+
+      try {
+        const resp = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item.data)
+        });
+        if (resp.ok) {
+          item.status = "uploaded";
+          saveRecords(records);
+          showToast("✓ Ficha enviada com sucesso!");
+        } else {
+          alert("Erro do servidor: " + resp.status);
+        }
+      } catch (e) {
+        alert("Falha de conexão: " + e.message);
       }
     }
   </script>
