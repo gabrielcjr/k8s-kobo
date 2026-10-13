@@ -11,7 +11,7 @@ Originalmente, a coleta de dados de missões utilizava a plataforma gratuita na 
 1. **Eliminar dependência de planos de terceiros**, mantendo os dados proprietários dentro da infraestrutura da organização.
 2. **Substituir o stack pesado original** (Postgres + Redis + Celery + Django KPI + Kobocat + Enketo), que consumiria mais de 4 GB de memória RAM, por um servidor ultraleve em Python / FastAPI / SQLite consumindo apenas ~40 MB de memória RAM.
 3. **Preservar a experiência dos missionários**: não exigir reaprendizado nem alteração de fluxos. O app Android **KoBoCollect** e a coleta web offline continuam funcionando identicamente.
-4. **Preservar a integração com Google Sheets**: manter a fórmula `=IMPORTDATA(...)` funcionando sem quebrar relatórios e dashboards já existentes na liderança.
+4. **Segurança dos dados e integração com Google Sheets**: remoção da API pública aberta desprotegida; os dados agora são transferidos com total segurança via Copiar e Colar (TSV) diretamente pelo Dashboard autenticado, gerando as fórmulas exatas de WhatsApp e Mapa.
 
 ---
 
@@ -35,7 +35,7 @@ Originalmente, a coleta de dados de missões utilizava a plataforma gratuita na 
 
 ### [`app/main.py`](file:///home/ubuntu/k8s_kobo/app/main.py)
 Ponto de entrada da aplicação FastAPI. Responsável por:
-* **Autenticação HTTP Basic:** Função `verify_credentials()` valida `renovamechurch:Rvehonraegloria`.
+* **Autenticação HTTP Basic:** Função `check_credentials()` valida `renovamechurch:Rvehonraegloria`.
 * **OpenRosa Protocol:**
   * `/{username}/formList` e `/formList`: Catálogo XML consumido pelo KoBoCollect.
   * `/formXml` e `/forms/{id}/form.xml`: Download da definição XForm.
@@ -50,9 +50,10 @@ Ponto de entrada da aplicação FastAPI. Responsável por:
   * `GET /api/dashboard/submissions/{id}`: Consulta os dados de uma ficha individual (protegido por Basic Auth).
   * `PUT /api/dashboard/submissions/{id}`: Atualização de campos de uma ficha (nome, data, idade, telefone, decisão, cidade, povoado, coordenadas, etc.).
   * `DELETE /api/dashboard/submissions/{id}`: Exclusão permanente de uma ficha no SQLite.
-* **APIs de Integração e Exportação:**
-  * `GET /data.csv`: Endpoint consumido pelo Google Sheets (`=IMPORTDATA`).
-  * `GET /campo-missionarios.csv`: Endpoint simplificado para ações futuras.
+* **APIs de Integração e Exportação (Todas Protegidas por Autenticação):**
+  * `GET /api/dashboard/copy-tsv`: Exportação TSV das 16 colunas A..P para colar no Google Sheets com fórmulas calculadas.
+  * `GET /campo-missionarios.csv`: Exportação CSV no formato exato da planilha da igreja.
+  * `GET /data.csv`: Exportação CSV padrão KoBoToolbox.
   * `GET /api/export/xlsx`: Gera planilha binária em formato Excel (.xlsx).
   * `GET /api/export/geojson`: Exporta os pontos geográficos em formato GeoJSON para QGIS ou ArcGIS.
   * `GET /healthz`: Probe de liveness e readiness do Kubernetes.
@@ -235,13 +236,14 @@ kubectl logs -n kobo -l app=kobo-server --tail=100
    sudo nginx -t
    ```
 
-#### 3. Google Sheets não atualiza os dados
-* Verifique se a URL na planilha está correta: `=IMPORTDATA("https://kobo.gabrielcjr.website/data.csv")`.
-* Teste se o endpoint responde diretamente:
-  ```bash
-  curl -I https://kobo.gabrielcjr.website/data.csv
-  ```
-* O Google Sheets faz cache das requisições `IMPORTDATA` por cerca de 1 a 2 horas. Para forçar atualização imediata em uma planilha específica, adicione um parâmetro falso ao final da URL, por exemplo `=IMPORTDATA("https://kobo.gabrielcjr.website/data.csv?t=" & NOW())`.
+#### 3. Como transferir registros para o Google Planilhas
+* Por **segurança dos dados dos contatos**, o acesso anônimo sem autenticação via `=IMPORTDATA` foi bloqueado com HTTP 401.
+* O fluxo oficial é realizado diretamente via Painel Administrativo (`/dashboard`):
+  1. Informe a **Próxima Linha Vazia** na planilha (ex: 510).
+  2. Clique em **📋 Copiar Registros Filtrados** ou no botão individual **📋 Copiar** da linha desejada.
+  3. No Google Planilhas (aba *Campo Missionários*), selecione a célula `A{linha}` (coluna A).
+  4. Pressione `Ctrl + V`.
+  5. As 16 colunas A..P serão coladas com as fórmulas de WhatsApp e Google Maps geradas e ativas.
 
 ---
 
@@ -250,8 +252,8 @@ kubectl logs -n kobo -l app=kobo-server --tail=100
 | Data | Decisão Técnica / Mudança | Motivo |
 |---|---|---|
 | **Outubro/2026** | Criação do servidor nativo K3s compatível com OpenRosa | Substituição da infraestrutura paga/descontinuada do KoBoToolbox. |
-| **Outubro/2026** | Endpoint CSV e compatibilidade KoBo API v2 | Permitir leitura imediata no Google Sheets sem alterar fórmulas existentes. |
-| **Outubro/2026** | Omissão dos campos cidade e povoado no formulário de campo | Cidade e povoado agora são geridos de forma agregada posteriormente pela liderança. Mantidos no CSV como colunas em branco para retrocompatibilidade. |
+| **Outubro/2026** | Omissão dos campos cidade e povoado no formulário de campo | Cidade e povoado agora são geridos de forma agregada posteriormente pela liderança. |
 | **Outubro/2026** | Remoção de links do dashboard e backup local do formulário | Segurança da informação: missionários comuns não devem ver métricas gerais nem baixar bases locais. |
 | **Outubro/2026** | Purga automática de formulários enviados da memória local | Impedir que terceiros tenham acesso a dados sensíveis de cadastros anteriores no aparelho do missionário. |
 | **Outubro/2026** | Implementação de Live Polling (3s) no Dashboard | Permitir acompanhamento ao vivo de campanhas evangelísticas em telões e computadores da igreja sem necessidade de recarregar a página. |
+| **Outubro/2026** | Remoção da API aberta e fluxo seguro de Copiar & Colar para o Google Sheets | Segurança dos dados: fechar acesso público e desprotegido a contatos; geração automática de fórmulas exatas de WhatsApp (`=IF(ISBLANK(F510)...)`) e Mapa (`=IF(ISBLANK(N510)...)`). |

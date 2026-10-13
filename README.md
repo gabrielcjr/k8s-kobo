@@ -12,7 +12,7 @@ Substitui a infraestrutura pesada original do KoBoToolbox (PostgreSQL, Redis, Ce
 |---|---|---|
 | 📋 **Formulário Web dos Missionários** | [https://kobo.gabrielcjr.website/x/PY2hbkKi](https://kobo.gabrielcjr.website/x/PY2hbkKi) | Aberto aos missionários (PWA offline, sem links administrativos) |
 | 📊 **Painel Administrativo (Live)** | [https://kobo.gabrielcjr.website/dashboard](https://kobo.gabrielcjr.website/dashboard) | HTTP Basic Auth (`renovamechurch`) |
-| 📈 **API Google Sheets (CSV)** | `https://kobo.gabrielcjr.website/data.csv` | Aberto para `=IMPORTDATA(...)` |
+| 📈 **Exportação de Dados (CSV / TSV)** | `https://kobo.gabrielcjr.website/campo-missionarios.csv` | HTTP Basic Auth (Protegido por segurança dos dados) |
 | 📥 **Exportação Excel (.xlsx)** | `https://kobo.gabrielcjr.website/api/export/xlsx` | HTTP Basic Auth |
 | 🗺 **Exportação GeoJSON** | `https://kobo.gabrielcjr.website/api/export/geojson` | HTTP Basic Auth |
 | 📲 **OpenRosa Form Discovery** | `https://kobo.gabrielcjr.website/formList` | HTTP Basic Auth |
@@ -126,16 +126,19 @@ flowchart TD
   * O mapa interativo (Leaflet) plota instantaneamente novos marcadores geográficos com popups informativos.
   * Mantém filtros de busca ativos sem interrupção para o administrador.
 
-### 4. Integração com Google Planilhas (Google Sheets)
-* As planilhas da liderança consomem os dados via fórmula nativa:
-  ```excel
-  =IMPORTDATA("https://kobo.gabrielcjr.website/data.csv")
-  ```
-* **Características:**
-  * Cabeçalhos técnicos e amigáveis em português (`?labels=true`).
-  * Endpoint compatível com KoBo API v2: `/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv`.
-  * Headers CORS abertos (`Access-Control-Allow-Origin: *`) e suporte a requisições `GET` e `HEAD` para total estabilidade no Google Sheets.
-  * Colunas de cidade e povoado foram descontinuadas no formulário de campo, sendo geradas como valores vazios no CSV para manter retrocompatibilidade com fórmulas legadas.
+### 4. Integração Segura com Google Planilhas (Copiar e Colar)
+* **Remoção da API Aberta por Segurança:** Por segurança da informação dos contatos de campo, o acesso anônimo à API de exportação foi desativado (retornando HTTP 401).
+* **Novo Fluxo de Transferência (Copiar e Colar):** Ao invés de usar `=IMPORTDATA()`, a liderança copia os registros diretamente no Dashboard (em formato TSV de 16 colunas A..P) e cola na célula `A{linha}` do Google Sheets.
+* **Fórmulas Automáticas Geradas:**
+  * **WhatsApp (Coluna G):**
+    ```excel
+    =IF(ISBLANK(F510); ""; IF(F510 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F510; "Chamar no WhatsApp")))
+    ```
+  * **Mapa (Coluna O):**
+    ```excel
+    =IF(ISBLANK(N510); ""; IF(N510 = "[NULL,NULL]"; "Localização não capturada";IF(N510 = "[0.1,0.1]"; "Localização não capturada"; IF(N510 = "[1,1]"; "Localização não capturada"; IF(N510 = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N510; "-?\d+\.\d+,-?\d+\.\d+"); "Ver no mapa"))))))
+    ```
+* **Botão Individual "Copiar Linha":** Cada ficha na tabela possui botão para cópia individual imediata, auto-incrementando o número da próxima linha na planilha.
 
 ---
 

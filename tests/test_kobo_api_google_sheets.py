@@ -26,10 +26,11 @@ def seed_test_submission():
         source="kobo_collect"
     )
 
-def test_google_sheets_csv_endpoints_unauthenticated_access(client):
+def test_data_export_endpoints_unauthenticated_rejected(client):
     """
-    Google Sheets =IMPORTDATA(...) cannot pass custom Authorization headers.
-    All CSV endpoints must be accessible unauthenticated and return HTTP 200.
+    Por segurança dos dados, a API aberta foi removida.
+    Todas as requisições não autenticadas a endpoints de exportação de dados
+    devem ser rejeitadas com HTTP 401 Unauthorized.
     """
     endpoints = [
         "/data.csv",
@@ -38,22 +39,29 @@ def test_google_sheets_csv_endpoints_unauthenticated_access(client):
         "/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv/",
         "/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/export-settings/esjanp2i9bM7zAYduBVtzXe/data.csv",
         "/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ.csv",
+        "/campo-missionarios.csv",
+        "/sheets.csv",
+        "/api/export/campo-missionarios.csv",
+        "/data.json",
+        "/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.json",
+        "/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ.json",
+        "/api/export/geojson",
+        "/api/export/xlsx",
+        "/api/dashboard/copy-tsv",
     ]
     for url in endpoints:
         res = client.get(url)
-        assert res.status_code == 200, f"GET {url} failed with status {res.status_code}"
-        assert "text/csv" in res.headers["content-type"]
-        assert res.headers.get("access-control-allow-origin") == "*"
+        assert res.status_code == 401, f"GET {url} should have failed with 401, got {res.status_code}"
+        assert "Basic realm=" in res.headers.get("www-authenticate", "")
 
         head_res = client.head(url)
-        assert head_res.status_code == 200, f"HEAD {url} failed with status {head_res.status_code}"
-        assert "text/csv" in head_res.headers["content-type"]
+        assert head_res.status_code == 401, f"HEAD {url} should have failed with 401, got {head_res.status_code}"
 
-def test_csv_structure_raw_field_names(client):
+def test_csv_structure_raw_field_names(client, valid_auth_headers):
     """
-    Verify exact KoBoToolbox field structure without human labels (default API behavior).
+    Verify exact KoBoToolbox field structure when authenticated.
     """
-    res = client.get("/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv")
+    res = client.get("/api/v2/assets/a7FqboN3tiXKPo6hSc8MzJ/data.csv", headers=valid_auth_headers)
     assert res.status_code == 200
     reader = csv.reader(io.StringIO(res.text))
     rows = list(reader)
@@ -88,11 +96,11 @@ def test_csv_structure_raw_field_names(client):
     assert carlos_row[lat_idx] == "-12.257"
     assert carlos_row[lon_idx] == "-38.964"
 
-def test_csv_structure_with_human_labels(client):
+def test_csv_structure_with_human_labels(client, valid_auth_headers):
     """
-    Verify ?labels=true or ?lang=pt produces human-readable Brazilian Portuguese headers.
+    Verify ?labels=true or ?lang=pt produces human-readable headers when authenticated.
     """
-    res = client.get("/data.csv?labels=true")
+    res = client.get("/data.csv?labels=true", headers=valid_auth_headers)
     assert res.status_code == 200
     reader = csv.reader(io.StringIO(res.text))
     rows = list(reader)
@@ -106,9 +114,9 @@ def test_csv_structure_with_human_labels(client):
     for lbl in expected_labels:
         assert lbl in header, f"Human label {lbl} missing in CSV header"
 
-def test_kobo_json_api_v2_endpoints(client):
+def test_kobo_json_api_v2_endpoints(client, valid_auth_headers):
     """
-    Verify KoBoToolbox v2 JSON endpoints return exact pagination and result schema.
+    Verify KoBoToolbox v2 JSON endpoints return exact pagination and result schema when authenticated.
     """
     json_endpoints = [
         "/data.json",
@@ -118,29 +126,26 @@ def test_kobo_json_api_v2_endpoints(client):
         "/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ.json"
     ]
     for url in json_endpoints:
-        res = client.get(url)
+        res = client.get(url, headers=valid_auth_headers)
         assert res.status_code == 200, f"Endpoint {url} failed with status {res.status_code}"
-        assert res.headers.get("access-control-allow-origin") == "*"
         data = res.json()
         assert "count" in data
         assert "results" in data
         assert isinstance(data["results"], list)
         assert data["count"] >= 1
 
-        # Check item keys
         first = data["results"][0]
         assert "_id" in first
         assert "formhub/uuid" in first
         assert "meta/instanceID" in first
         assert "_xform_id_string" in first
 
-def test_kobo_json_api_v1_array_endpoint(client):
+def test_kobo_json_api_v1_array_endpoint(client, valid_auth_headers):
     """
-    KoBo API v1 data endpoint returns raw array directly.
+    KoBo API v1 data endpoint returns raw array directly when authenticated.
     """
-    res = client.get("/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ")
+    res = client.get("/api/v1/data/a7FqboN3tiXKPo6hSc8MzJ", headers=valid_auth_headers)
     assert res.status_code == 200
-    assert res.headers.get("access-control-allow-origin") == "*"
     data = res.json()
     assert isinstance(data, list)
     assert len(data) >= 1
@@ -177,13 +182,12 @@ def test_kobo_api_v1_forms_list(client):
     assert len(data) >= 1
     assert data[0]["id_string"] == "a7FqboN3tiXKPo6hSc8MzJ"
 
-def test_geojson_export(client):
+def test_geojson_export(client, valid_auth_headers):
     """
-    Verify GeoJSON endpoint produces valid RFC 7946 FeatureCollection for GIS mapping.
+    Verify GeoJSON endpoint produces valid RFC 7946 FeatureCollection when authenticated.
     """
-    res = client.get("/api/export/geojson")
+    res = client.get("/api/export/geojson", headers=valid_auth_headers)
     assert res.status_code == 200
-    assert res.headers.get("access-control-allow-origin") == "*"
     data = res.json()
     assert data["type"] == "FeatureCollection"
     assert "features" in data
@@ -194,27 +198,28 @@ def test_geojson_export(client):
     assert feature["geometry"]["type"] == "Point"
     coords = feature["geometry"]["coordinates"]
     assert len(coords) == 2
-    # [longitude, latitude]
     assert -45 < coords[0] < -30
     assert -15 < coords[1] < -5
     assert "nome" in feature["properties"]
 
 def test_excel_export_behavior(client, valid_auth_headers):
     """
-    Verify Excel (.xlsx) export rejects invalid credentials, accepts valid auth or direct web query,
-    and produces a valid XLSX workbook matching the schema.
+    Verify Excel (.xlsx) export rejects invalid or missing credentials with 401,
+    and returns valid XLSX binary when authenticated.
     """
     # Bad credentials must be rejected with 401
     bad_res = client.get("/api/export/xlsx", headers={"Authorization": "Basic d3Jvbmc6Y3JlZHM="})
     assert bad_res.status_code == 401
-    assert 'Basic realm="KoBoToolbox"' in bad_res.headers.get("www-authenticate", "")
+
+    # Unauthenticated request rejected with 401
+    no_auth_res = client.get("/api/export/xlsx")
+    assert no_auth_res.status_code == 401
 
     # Authorized request returns 200 and valid XLSX binary
     res = client.get("/api/export/xlsx", headers=valid_auth_headers)
     assert res.status_code == 200
     assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in res.headers["content-type"]
     
-    # Load with openpyxl to verify valid XLSX binary structure
     wb = openpyxl.load_workbook(io.BytesIO(res.content))
     assert "Missionários Renova-me" in wb.sheetnames
     ws = wb["Missionários Renova-me"]
@@ -224,31 +229,34 @@ def test_excel_export_behavior(client, valid_auth_headers):
     assert "Nome" in header_vals
     assert "Telefone" in header_vals
 
-    # Direct export without auth (for Excel web query) also returns 200
-    direct_res = client.get("/api/export/xlsx")
-    assert direct_res.status_code == 200
-
-def test_campo_missionarios_csv_structure(client):
+def test_campo_missionarios_csv_structure(client, valid_auth_headers):
     """
-    Verify /campo-missionarios.csv returns the exact columns and link formulas
-    corresponding to the 'Campo Missionários' Google Sheets table.
+    Verify /campo-missionarios.csv returns the exact 16 columns A..P and exact formulas
+    for WhatsApp and Mapa requested by the user.
     """
-    res = client.get("/campo-missionarios.csv")
+    res = client.get("/campo-missionarios.csv?start_row=510", headers=valid_auth_headers)
     assert res.status_code == 200
     assert "text/csv" in res.headers["content-type"]
-    assert res.headers.get("access-control-allow-origin") == "*"
     
     rows = list(csv.reader(io.StringIO(res.text)))
     assert len(rows) >= 2
     header = rows[0]
-    expected_header = [
-        "Data", "Cidade", "Povoado", "Nome", "Idade", "Telefone", "Whatsapp",
-        "Gênero", "Recebeu a Jesus?", "Endereço ou referência", "Observações",
-        "Localizador", "Missionário(a)"
-    ]
-    assert header == expected_header
+    assert len(header) == 16
+    assert header[0] == "Data"
+    assert header[1] == "Cidade"
+    assert header[2] == "Povoado"
+    assert header[3] == "Nome"
+    assert header[4] == "Idade"
+    assert header[5] == "Telefone"
+    assert header[6] == "Whatsapp"
+    assert header[7] == "Gênero"
+    assert header[9] == "Recebeu a Jesus?"
+    assert header[11] == "Endereço ou referência"
+    assert header[12] == "Observações"
+    assert header[14] == "Localizador"
+    assert header[15] == "Missionário(a)"
 
-    # Row 1 check
+    # Row 1 check (Carlos Silva at row 510)
     carlos_row = None
     for r in rows[1:]:
         if "Carlos Silva" in r:
@@ -259,29 +267,42 @@ def test_campo_missionarios_csv_structure(client):
     assert carlos_row[1] == "Cruz das Almas"
     assert carlos_row[2] == "Centro"
     assert carlos_row[3] == "Carlos Silva"
+    assert carlos_row[4] == "34"
     assert carlos_row[5] == "75999887766"
-    assert 'HYPERLINK("https://api.whatsapp.com/send?phone=5575999887766"' in carlos_row[6]
-    assert "Chamar no WhatsApp" in carlos_row[6]
-    assert carlos_row[8] == "Sim"
-    assert 'HYPERLINK("https://www.google.com/maps?q=' in carlos_row[11]
-    assert "Ver no mapa" in carlos_row[11]
 
-def test_campo_missionarios_custom_cidade_povoado_and_layout(client):
+    # Exact WhatsApp formula check
+    expected_wa_formula = '=IF(ISBLANK(F510); ""; IF(F510 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F510; "Chamar no WhatsApp")))'
+    assert carlos_row[6] == expected_wa_formula
+
+    assert carlos_row[7] == "Masculino"
+    assert carlos_row[9] == "Sim"
+    assert carlos_row[11] == "Rua Principal, 100"
+    assert carlos_row[12] == "Interessado nos estudos bíblicos"
+
+    # Geolocalizador in N format [-12.257,-38.964]
+    assert carlos_row[13] == "[-12.257,-38.964]"
+
+    # Exact Mapa formula check
+    expected_map_formula = (
+        '=IF(ISBLANK(N510); ""; IF(N510 = "[NULL,NULL]"; "Localização não capturada";'
+        ' IF(N510 = "[0.1,0.1]"; "Localização não capturada";'
+        ' IF(N510 = "[1,1]"; "Localização não capturada";'
+        ' IF(N510 = "[1,2]"; "Localização não capturada";'
+        ' HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N510; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa"))))))'
+    )
+    assert carlos_row[14] == expected_map_formula
+    assert carlos_row[15] == "Missionário Teste"
+
+def test_campo_missionarios_custom_cidade_povoado_and_layout(client, valid_auth_headers):
     """
-    Verify customizing Cidade, Povoado, and 16-column layout matching A..P.
+    Verify customizing Cidade, Povoado, and row index.
     """
-    url = "/campo-missionarios.csv?cidade=Feira+de+Santana&povoado=Humildes&layout=exact_16"
-    res = client.get(url)
+    url = "/campo-missionarios.csv?cidade=Feira+de+Santana&povoado=Humildes&start_row=600"
+    res = client.get(url, headers=valid_auth_headers)
     assert res.status_code == 200
     rows = list(csv.reader(io.StringIO(res.text)))
     header = rows[0]
     assert len(header) == 16
-    assert header[0] == "Data"
-    assert header[1] == "Cidade"
-    assert header[2] == "Povoado"
-    assert header[9] == "Recebeu a Jesus?"
-    assert header[14] == "Localizador"
-    assert header[15] == "Missionário(a)"
 
     carlos_row = None
     for r in rows[1:]:
@@ -291,6 +312,31 @@ def test_campo_missionarios_custom_cidade_povoado_and_layout(client):
     assert carlos_row is not None
     assert carlos_row[1] == "Feira de Santana"
     assert carlos_row[2] == "Humildes"
+    # Row 600 formulas
+    assert "F600" in carlos_row[6]
+    assert "N600" in carlos_row[14]
+
+def test_copy_tsv_endpoint(client, valid_auth_headers):
+    """
+    Verify the /api/dashboard/copy-tsv endpoint generates TSV content suitable for pasting
+    directly into Google Sheets.
+    """
+    res = client.get("/api/dashboard/copy-tsv?start_row=510", headers=valid_auth_headers)
+    assert res.status_code == 200
+    assert "text/tab-separated-values" in res.headers["content-type"]
+    
+    text = res.text
+    lines = text.strip().split("\n")
+    assert len(lines) >= 1
+    
+    first_cols = lines[0].split("\t")
+    assert len(first_cols) == 16
+    assert "10/2026" in first_cols[0]
+    assert "Carlos Silva" in first_cols[3]
+    assert "75999887766" in first_cols[5]
+    assert '=IF(ISBLANK(F510); ""; IF(F510 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F510; "Chamar no WhatsApp")))' in first_cols[6]
+    assert "[-12.257,-38.964]" in first_cols[13]
+    assert 'HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N510; "-?\\d+\\.\\d+,-?\\d+\\.\\d+"); "Ver no mapa")' in first_cols[14]
 
 def test_aggregated_action_metadata_without_form_fields(client, valid_auth_headers):
     """
@@ -338,7 +384,7 @@ def test_aggregated_action_metadata_without_form_fields(client, valid_auth_heade
     assert sub2.status_code == 200
 
     # 4. Check CSV output
-    res_csv = client.get("/campo-missionarios.csv")
+    res_csv = client.get("/campo-missionarios.csv", headers=valid_auth_headers)
     assert res_csv.status_code == 200
     rows = list(csv.reader(io.StringIO(res_csv.text)))
     
@@ -353,9 +399,8 @@ def test_aggregated_action_metadata_without_form_fields(client, valid_auth_heade
     assert sub2_row[2] == "Guaibim"
 
     # 5. Check filtered CSV output for Valença
-    res_valenca = client.get("/campo-missionarios.csv?cidade=Valença")
+    res_valenca = client.get("/campo-missionarios.csv?cidade=Valença", headers=valid_auth_headers)
     assert res_valenca.status_code == 200
     rows_valenca = list(csv.reader(io.StringIO(res_valenca.text)))
     valenca_names = [r[3] for r in rows_valenca[1:]]
     assert "Irmã Maria Campanha" in valenca_names
-
