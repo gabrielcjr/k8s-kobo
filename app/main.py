@@ -4,7 +4,8 @@ import csv
 import json
 import uuid
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, UploadFile, File, Form, Header
 from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse, JSONResponse
@@ -22,7 +23,12 @@ from .openrosa import (
     parse_submission_xml
 )
 
-app = FastAPI(title="KoBoToolbox Renova-me Server", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="KoBoToolbox Renova-me Server", version="1.0.0", lifespan=lifespan)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -36,14 +42,10 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # Mount static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
-
 # --- HEALTHCHECK ---
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "app": "kobo-renovame", "time": datetime.utcnow().isoformat()}
+    return {"status": "ok", "app": "kobo-renovame", "time": datetime.now(timezone.utc).isoformat()}
 
 @app.get("/sw.js")
 @app.get("/x/offline-app-worker.js")
@@ -315,7 +317,7 @@ def api_submit(payload: WebSubmissionPayload):
         uuid=new_uuid,
         form_id=FORM_ID,
         version=FORM_VERSION,
-        data_date=payload.data_date or datetime.utcnow().strftime("%Y-%m-%d"),
+        data_date=payload.data_date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         nome=payload.nome,
         idade=payload.idade,
         telefone=payload.telefone,
@@ -426,7 +428,7 @@ def export_xlsx(authorization: Optional[str] = Header(None)):
     wb.save(buf)
     buf.seek(0)
 
-    filename = f"Missionarios_Renovame_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"Missionarios_Renovame_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.xlsx"
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -570,11 +572,17 @@ def serve_csv_response(labels: bool = False, delimiter: str = ","):
 
 # --- GOOGLE SHEETS & KOBOTOOLBOX DATA CSV ENDPOINTS ---
 @app.get("/data.csv")
+@app.head("/data.csv")
 @app.get("/api/export/csv")
+@app.head("/api/export/csv")
 @app.get("/api/v2/assets/{asset_id}/data.csv")
+@app.head("/api/v2/assets/{asset_id}/data.csv")
 @app.get("/api/v2/assets/{asset_id}/data.csv/")
+@app.head("/api/v2/assets/{asset_id}/data.csv/")
 @app.get("/api/v2/assets/{asset_id}/export-settings/{export_id}/data.csv")
+@app.head("/api/v2/assets/{asset_id}/export-settings/{export_id}/data.csv")
 @app.get("/api/v1/data/{form_id}.csv")
+@app.head("/api/v1/data/{form_id}.csv")
 def get_kobo_csv_endpoint(
     asset_id: Optional[str] = None,
     export_id: Optional[str] = None,
@@ -588,10 +596,15 @@ def get_kobo_csv_endpoint(
 
 # --- GOOGLE SHEETS & KOBOTOOLBOX DATA JSON ENDPOINTS ---
 @app.get("/data.json")
+@app.head("/data.json")
 @app.get("/api/v2/assets/{asset_id}/data.json")
+@app.head("/api/v2/assets/{asset_id}/data.json")
 @app.get("/api/v2/assets/{asset_id}/data")
+@app.head("/api/v2/assets/{asset_id}/data")
 @app.get("/api/v2/assets/{asset_id}/data/")
+@app.head("/api/v2/assets/{asset_id}/data/")
 @app.get("/api/v1/data/{form_id}.json")
+@app.head("/api/v1/data/{form_id}.json")
 def get_kobo_json_endpoint(asset_id: Optional[str] = None, form_id: Optional[str] = None):
     submissions = get_all_submissions()
     return JSONResponse(
@@ -674,7 +687,7 @@ def get_export_settings_v2(asset_id: str, request: Request):
         "data_url_csv": f"{base_url}/api/v2/assets/{asset_id}/export-settings/esjanp2i9bM7zAYduBVtzXe/data.csv",
         "data_url_xlsx": f"{base_url}/api/export/xlsx",
         "name": "Exportação Padrão",
-        "date_modified": datetime.utcnow().isoformat()
+        "date_modified": datetime.now(timezone.utc).isoformat()
     }]
 
 @app.get("/api/v1/forms")

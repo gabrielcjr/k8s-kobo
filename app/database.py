@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 DB_DIR = os.environ.get("DATA_DIR", "/data")
@@ -83,7 +83,7 @@ def insert_submission(
     raw_xml: Optional[str] = None
 ) -> int:
     lat, lon, alt, acc = parse_geopoint(geopoint)
-    sub_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    sub_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -127,7 +127,7 @@ def get_stats() -> Dict[str, Any]:
     cursor.execute("SELECT COUNT(*) FROM submissions")
     total = cursor.fetchone()[0]
 
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cursor.execute("SELECT COUNT(*) FROM submissions WHERE submission_time LIKE ?", (f"{today_str}%",))
     today_count = cursor.fetchone()[0]
 
