@@ -216,3 +216,67 @@ def get_stats() -> Dict[str, Any]:
         "gender_stats": gender_stats,
         "top_missionaries": top_missionaries
     }
+
+def get_submission_by_id(submission_id: int) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM submissions WHERE id = ?", (submission_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def delete_submission(submission_id: int) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM submissions WHERE id = ?", (submission_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+def update_submission(submission_id: int, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Check if exists
+    cursor.execute("SELECT * FROM submissions WHERE id = ?", (submission_id,))
+    existing = cursor.fetchone()
+    if not existing:
+        conn.close()
+        return None
+
+    # Handle geopoint updates
+    if "geopoint" in updates and updates["geopoint"]:
+        lat, lon, alt, acc = parse_geopoint(updates["geopoint"])
+        updates["latitude"] = lat
+        updates["longitude"] = lon
+        updates["altitude"] = alt
+        updates["precision"] = acc
+
+    allowed_fields = [
+        "data_date", "nome", "idade", "telefone", "genero", "recebeu_jesus",
+        "endereco", "geopoint", "latitude", "longitude", "altitude", "precision",
+        "observacoes", "missionario", "cidade", "povoado", "acao"
+    ]
+    
+    set_clauses = []
+    params = []
+    for field in allowed_fields:
+        if field in updates:
+            set_clauses.append(f"{field} = ?")
+            params.append(updates[field])
+            
+    if not set_clauses:
+        conn.close()
+        return dict(existing)
+        
+    params.append(submission_id)
+    query = f"UPDATE submissions SET {', '.join(set_clauses)} WHERE id = ?"
+    cursor.execute(query, tuple(params))
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM submissions WHERE id = ?", (submission_id,))
+    updated_row = cursor.fetchone()
+    conn.close()
+    return dict(updated_row) if updated_row else None
+

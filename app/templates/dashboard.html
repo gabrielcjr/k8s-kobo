@@ -380,6 +380,139 @@
       0% { background-color: rgba(34, 197, 94, 0.35); }
       100% { background-color: transparent; }
     }
+
+    /* Action Buttons in Table */
+    .actions-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action-edit {
+      background: #1e3a8a;
+      color: #bfdbfe;
+      border: 1px solid #3b82f6;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-action-edit:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    .btn-action-delete {
+      background: #7f1d1d;
+      color: #fca5a5;
+      border: 1px solid #ef4444;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-action-delete:hover {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    /* Modal Dialog */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-window {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #162032;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 600px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .modal-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .modal-input {
+      background: #0f172a;
+      border: 1px solid var(--surface-border);
+      color: #fff;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+    }
+    .modal-input:focus {
+      border-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -651,6 +784,7 @@
               <th>Endereço / Referência</th>
               <th>Missionário(a)</th>
               <th>Origem</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -688,10 +822,20 @@
                   <span class="badge badge-web">Web</span>
                 {% endif %}
               </td>
+              <td class="actions-cell">
+                <button type="button" class="btn-action-edit" onclick="openEditModal('{{ s.id }}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </button>
+                <button type="button" class="btn-action-delete" onclick="confirmDeleteSubmission('{{ s.id }}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  Excluir
+                </button>
+              </td>
             </tr>
             {% else %}
             <tr id="emptyTableRow">
-              <td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted);">
+              <td colspan="13" style="text-align:center;padding:40px;color:var(--text-muted);">
                 Nenhuma ficha coletada ainda. Utilize o aplicativo KoBoCollect ou o formulário web para registrar o primeiro contato!
               </td>
             </tr>
@@ -700,6 +844,101 @@
         </table>
       </div>
     </section>
+
+    <!-- Modal de Edição de Submissão -->
+    <div id="editModalBackdrop" class="modal-backdrop">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3 style="font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar Ficha Missionária <span id="modalRecordId" style="color:var(--blue);font-size:0.9rem;"></span>
+          </h3>
+          <button type="button" onclick="closeEditModal()" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:1.4rem;line-height:1;">&times;</button>
+        </div>
+
+        <form id="editForm" onsubmit="event.preventDefault(); saveEditSubmission();">
+          <input type="hidden" id="edit_id">
+          <div class="modal-body">
+            <div class="form-grid-2">
+              <div class="modal-field">
+                <label class="modal-label" for="edit_nome">Nome Completo *</label>
+                <input type="text" id="edit_nome" class="modal-input" required>
+              </div>
+              <div class="modal-field">
+                <label class="modal-label" for="edit_data_date">Data da Coleta *</label>
+                <input type="date" id="edit_data_date" class="modal-input" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="modal-field">
+                <label class="modal-label" for="edit_idade">Idade</label>
+                <input type="number" id="edit_idade" class="modal-input" min="0" max="130">
+              </div>
+              <div class="modal-field">
+                <label class="modal-label" for="edit_telefone">Telefone / WhatsApp (11 dígitos) *</label>
+                <input type="tel" id="edit_telefone" class="modal-input" required placeholder="75999999999">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="modal-field">
+                <label class="modal-label" for="edit_genero">Gênero</label>
+                <select id="edit_genero" class="modal-input">
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
+              </div>
+              <div class="modal-field">
+                <label class="modal-label" for="edit_recebeu_jesus">Recebeu Jesus?</label>
+                <select id="edit_recebeu_jesus" class="modal-input">
+                  <option value="Sim">Sim</option>
+                  <option value="Não">Não</option>
+                  <option value="evangelico">É Evangélico(a)</option>
+                  <option value="Vai decidir depois">Vai decidir depois</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="modal-field">
+                <label class="modal-label" for="edit_cidade">Cidade</label>
+                <input type="text" id="edit_cidade" class="modal-input">
+              </div>
+              <div class="modal-field">
+                <label class="modal-label" for="edit_povoado">Povoado / Bairro</label>
+                <input type="text" id="edit_povoado" class="modal-input">
+              </div>
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="edit_missionario">Missionário(a) *</label>
+              <input type="text" id="edit_missionario" class="modal-input" required>
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="edit_endereco">Endereço / Ponto de Referência</label>
+              <input type="text" id="edit_endereco" class="modal-input">
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="edit_observacoes">Observações / Pedidos de Oração</label>
+              <textarea id="edit_observacoes" class="modal-input" rows="2" style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="edit_geopoint">Coordenadas GPS (lat lon alt acc)</label>
+              <input type="text" id="edit_geopoint" class="modal-input" placeholder="-12.2570 -38.9640 100.0 5.0">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSaveEdit">💾 Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </main>
 
   <script id="submissionsJson" type="application/json">{{ submissions | tojson | safe }}</script>
@@ -837,7 +1076,7 @@
         if (!noMatchRow) {
           noMatchRow = document.createElement("tr");
           noMatchRow.id = "noFilterMatchRow";
-          noMatchRow.innerHTML = '<td colspan="12" style="text-align:center;padding:35px;color:var(--text-muted);">Nenhuma ficha encontrada para os filtros selecionados.</td>';
+          noMatchRow.innerHTML = '<td colspan="13" style="text-align:center;padding:35px;color:var(--text-muted);">Nenhuma ficha encontrada para os filtros selecionados.</td>';
           document.querySelector("#submissionsTable tbody").appendChild(noMatchRow);
         } else {
           noMatchRow.style.display = "";
@@ -934,6 +1173,168 @@
       applyFilters();
     }
 
+    // --- FUNÇÕES DE EDIÇÃO E EXCLUSÃO (DASHBOARD ADMIN) ---
+    function openEditModal(id) {
+      const numId = Number(id);
+      const s = submissionsData.find(item => Number(item.id) === numId);
+      if (!s) {
+        alert("Ficha não encontrada na memória.");
+        return;
+      }
+
+      document.getElementById("edit_id").value = s.id;
+      document.getElementById("modalRecordId").textContent = `#${s.id}`;
+      document.getElementById("edit_nome").value = s.nome || "";
+      document.getElementById("edit_data_date").value = s.data_date || (s.submission_time ? s.submission_time.substring(0, 10) : "");
+      document.getElementById("edit_idade").value = (s.idade !== null && s.idade !== undefined) ? s.idade : "";
+      document.getElementById("edit_telefone").value = s.telefone || "";
+      document.getElementById("edit_genero").value = s.genero || "Masculino";
+      document.getElementById("edit_recebeu_jesus").value = s.recebeu_jesus || "Sim";
+      document.getElementById("edit_cidade").value = s.cidade || "";
+      document.getElementById("edit_povoado").value = s.povoado || "";
+      document.getElementById("edit_missionario").value = s.missionario || "";
+      document.getElementById("edit_endereco").value = s.endereco || "";
+      document.getElementById("edit_observacoes").value = s.observacoes || "";
+      document.getElementById("edit_geopoint").value = s.geopoint || "";
+
+      document.getElementById("editModalBackdrop").classList.add("active");
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModalBackdrop").classList.remove("active");
+    }
+
+    window.addEventListener("click", function(event) {
+      const backdrop = document.getElementById("editModalBackdrop");
+      if (event.target === backdrop) {
+        closeEditModal();
+      }
+    });
+
+    async function saveEditSubmission() {
+      const id = document.getElementById("edit_id").value;
+      if (!id) return;
+
+      const btn = document.getElementById("btnSaveEdit");
+      btn.disabled = true;
+      btn.innerText = "Salvando...";
+
+      const payload = {
+        nome: document.getElementById("edit_nome").value.trim(),
+        data_date: document.getElementById("edit_data_date").value,
+        idade: document.getElementById("edit_idade").value ? parseInt(document.getElementById("edit_idade").value) : null,
+        telefone: document.getElementById("edit_telefone").value.trim(),
+        genero: document.getElementById("edit_genero").value,
+        recebeu_jesus: document.getElementById("edit_recebeu_jesus").value,
+        cidade: document.getElementById("edit_cidade").value.trim(),
+        povoado: document.getElementById("edit_povoado").value.trim(),
+        missionario: document.getElementById("edit_missionario").value.trim(),
+        endereco: document.getElementById("edit_endereco").value.trim(),
+        observacoes: document.getElementById("edit_observacoes").value.trim(),
+        geopoint: document.getElementById("edit_geopoint").value.trim()
+      };
+
+      try {
+        const resp = await fetch(`/api/dashboard/submissions/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          throw new Error("Servidor retornou erro: " + resp.status);
+        }
+
+        const data = await resp.json();
+        const updated = data.submission;
+
+        // Atualizar objeto na memória local
+        const idx = submissionsData.findIndex(item => Number(item.id) === Number(id));
+        if (idx !== -1) {
+          submissionsData[idx] = Object.assign(submissionsData[idx], updated);
+        }
+
+        // Atualizar visualmente a linha no DOM
+        const tr = document.querySelector(`#submissionsTable tbody tr[data-id="${id}"]`);
+        if (tr) {
+          tr.children[1].textContent = escapeHtml(updated.data_date || (updated.submission_time ? updated.submission_time.substring(0, 10) : ''));
+          tr.children[2].innerHTML = `<span class="badge badge-cidade">${escapeHtml(updated.cidade || '-')}</span>`;
+          tr.children[3].innerHTML = `<span class="badge badge-povoado">${escapeHtml(updated.povoado || '-')}</span>`;
+          tr.children[4].textContent = escapeHtml(updated.nome);
+          tr.children[5].textContent = updated.idade !== null && updated.idade !== undefined ? updated.idade : '-';
+          tr.children[6].innerHTML = `<a href="https://wa.me/55${updated.telefone}" target="_blank" style="color:var(--blue);text-decoration:none;">${escapeHtml(updated.telefone)}</a>`;
+          tr.children[7].textContent = escapeHtml(updated.genero || '');
+          tr.children[8].innerHTML = formatJesusBadge(updated.recebeu_jesus);
+          tr.children[9].textContent = escapeHtml(updated.endereco || '-');
+          tr.children[10].textContent = escapeHtml(updated.missionario || '');
+          tr.className = "row-new-highlight";
+        }
+
+        // Atualizar marcador no mapa
+        const numId = Number(id);
+        if (markersMap.has(numId)) {
+          const oldM = markersMap.get(numId);
+          map.removeLayer(oldM);
+          markersMap.delete(numId);
+        }
+        const newM = createMarkerForSubmission(updated);
+        if (newM) {
+          markersMap.set(numId, newM);
+          newM.addTo(map);
+        }
+
+        closeEditModal();
+        populateFilterOptions();
+        applyFilters();
+        alert("✓ Ficha atualizada com sucesso!");
+      } catch (err) {
+        alert("Erro ao salvar alterações: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "💾 Salvar Alterações";
+      }
+    }
+
+    async function confirmDeleteSubmission(id) {
+      const numId = Number(id);
+      const s = submissionsData.find(item => Number(item.id) === numId);
+      const name = s ? s.nome : `#${id}`;
+
+      if (!confirm(`Tem certeza que deseja excluir permanentemente a ficha de "${name}" (#${id})?\nEsta ação não poderá ser desfeita.`)) {
+        return;
+      }
+
+      try {
+        const resp = await fetch(`/api/dashboard/submissions/${id}`, {
+          method: "DELETE"
+        });
+
+        if (!resp.ok) {
+          throw new Error("Erro no servidor: " + resp.status);
+        }
+
+        submissionsData = submissionsData.filter(item => Number(item.id) !== numId);
+        knownIds.delete(numId);
+
+        const tr = document.querySelector(`#submissionsTable tbody tr[data-id="${id}"]`);
+        if (tr) {
+          tr.remove();
+        }
+
+        if (markersMap.has(numId)) {
+          const m = markersMap.get(numId);
+          map.removeLayer(m);
+          markersMap.delete(numId);
+        }
+
+        populateFilterOptions();
+        applyFilters();
+        alert("✓ Registro excluído com sucesso!");
+      } catch (e) {
+        alert("Falha na exclusão: " + e.message);
+      }
+    }
+
     async function pollLiveUpdates() {
       try {
         const resp = await fetch('/api/dashboard/live', { cache: 'no-store' });
@@ -978,6 +1379,16 @@
                 <span class="badge ${s.source === 'kobo_collect' ? 'badge-app' : 'badge-web'}">
                   ${s.source === 'kobo_collect' ? 'KoBoCollect' : 'Web'}
                 </span>
+              </td>
+              <td class="actions-cell">
+                <button type="button" class="btn-action-edit" onclick="openEditModal('${s.id}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </button>
+                <button type="button" class="btn-action-delete" onclick="confirmDeleteSubmission('${s.id}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  Excluir
+                </button>
               </td>
             `;
             tbody.insertBefore(tr, tbody.firstChild);

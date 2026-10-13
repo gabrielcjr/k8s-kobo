@@ -47,6 +47,9 @@ Ponto de entrada da aplicação FastAPI. Responsável por:
 * **Painel Administrativo:**
   * `GET /dashboard` e `GET /admin`: Renderiza a tela analítica com métricas e mapa.
   * `GET /api/dashboard/live`: Endpoint JSON de polling a cada 3s para inserção de novas submissões em tempo real sem refresh.
+  * `GET /api/dashboard/submissions/{id}`: Consulta os dados de uma ficha individual (protegido por Basic Auth).
+  * `PUT /api/dashboard/submissions/{id}`: Atualização de campos de uma ficha (nome, data, idade, telefone, decisão, cidade, povoado, coordenadas, etc.).
+  * `DELETE /api/dashboard/submissions/{id}`: Exclusão permanente de uma ficha no SQLite.
 * **APIs de Integração e Exportação:**
   * `GET /data.csv`: Endpoint consumido pelo Google Sheets (`=IMPORTDATA`).
   * `GET /campo-missionarios.csv`: Endpoint simplificado para ações futuras.
@@ -79,6 +82,7 @@ Frontend do painel analítico da liderança:
 * Gráficos e indicadores de KPIs (Total, Hoje, Decisões, Missionários).
 * Mapa Leaflet interativo com marcadores automáticos.
 * **Mecanismo de Polling em Tempo Real:** A cada 3 segundos requisita `/api/dashboard/live`, inserindo novos registros no topo da tabela com destaque verde animado e atualizando contadores sem necessidade de recarregar a página.
+* **Edição e Exclusão no Painel:** A tabela possui botões de ação (Editar e Excluir). A edição abre um modal com formulário completo que atualiza o registro em tempo real no banco, tabela e mapa, enquanto a exclusão remove permanentemente a ficha com confirmação de segurança.
 
 ---
 

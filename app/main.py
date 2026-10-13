@@ -15,7 +15,11 @@ from pydantic import BaseModel
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-from .database import init_db, insert_submission, get_all_submissions, get_stats, parse_geopoint, get_setting, set_setting
+from .database import (
+    init_db, insert_submission, get_all_submissions, get_stats,
+    parse_geopoint, get_setting, set_setting,
+    get_submission_by_id, delete_submission, update_submission
+)
 from .openrosa import (
     FORM_ID, FORM_NAME, FORM_VERSION, FORM_UUID, FORM_MD5,
     AUTH_USER, AUTH_PASS, check_credentials,
@@ -425,6 +429,63 @@ def get_dashboard_live(authorization: Optional[str] = Header(None)):
             "Access-Control-Allow-Origin": "*"
         }
     )
+
+class SubmissionUpdatePayload(BaseModel):
+    data_date: Optional[str] = None
+    nome: Optional[str] = None
+    idade: Optional[int] = None
+    telefone: Optional[str] = None
+    genero: Optional[str] = None
+    recebeu_jesus: Optional[str] = None
+    endereco: Optional[str] = None
+    geopoint: Optional[str] = None
+    observacoes: Optional[str] = None
+    missionario: Optional[str] = None
+    cidade: Optional[str] = None
+    povoado: Optional[str] = None
+    acao: Optional[str] = None
+
+@app.get("/api/dashboard/submissions/{submission_id}")
+def api_get_submission(submission_id: int, authorization: Optional[str] = Header(None)):
+    if not authorization or not check_credentials(authorization):
+        return Response(
+            content="Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"'}
+        )
+    sub = get_submission_by_id(submission_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Registro não encontrado")
+    return sub
+
+@app.put("/api/dashboard/submissions/{submission_id}")
+@app.post("/api/dashboard/submissions/{submission_id}/update")
+def api_update_submission(submission_id: int, payload: SubmissionUpdatePayload, authorization: Optional[str] = Header(None)):
+    if not authorization or not check_credentials(authorization):
+        return Response(
+            content="Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"'}
+        )
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    updated = update_submission(submission_id, updates)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Registro não encontrado")
+    return {"status": "success", "submission": updated}
+
+@app.delete("/api/dashboard/submissions/{submission_id}")
+@app.post("/api/dashboard/submissions/{submission_id}/delete")
+def api_delete_submission(submission_id: int, authorization: Optional[str] = Header(None)):
+    if not authorization or not check_credentials(authorization):
+        return Response(
+            content="Unauthorized",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"'}
+        )
+    deleted = delete_submission(submission_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Registro não encontrado")
+    return {"status": "success", "id": submission_id}
 
 # --- EXPORTS: EXCEL (.xlsx), CSV, GEOJSON ---
 @app.get("/api/export/xlsx")
