@@ -224,5 +224,54 @@ def test_dashboard_filtered_export_buttons_ui(client, valid_auth_headers):
     assert 'updateExportLinks(' in html
 
 
+def test_30_day_auth_cookie_and_session_persistence(client, valid_auth_headers):
+    """
+    Verify that authenticating at /dashboard issues a 30-day HttpOnly cookie (kobo_session)
+    and subsequent requests to dashboard, live polling, and exports succeed using ONLY the cookie.
+    """
+    # 1. Initial login with HTTP Basic
+    login_res = client.get("/dashboard", headers=valid_auth_headers)
+    assert login_res.status_code == 200
+    assert "kobo_session" in login_res.cookies
+    set_cookie = login_res.headers.get("set-cookie", "")
+    assert "Max-Age=2592000" in set_cookie  # 30 days = 2,592,000s
+    assert "HttpOnly" in set_cookie or "httponly" in set_cookie.lower()
+
+    session_cookie = {"kobo_session": login_res.cookies["kobo_session"]}
+
+    # 2. Access /dashboard with ONLY the cookie (no Authorization header)
+    dash_res = client.get("/dashboard", cookies=session_cookie)
+    assert dash_res.status_code == 200
+    assert "Missionários Renova-me" in dash_res.text
+
+    # 3. Access /api/dashboard/live with ONLY the cookie
+    live_res = client.get("/api/dashboard/live", cookies=session_cookie)
+    assert live_res.status_code == 200
+    assert "total" in live_res.json()
+
+    # 4. Access /campo-missionarios.csv with ONLY the cookie
+    csv_res = client.get("/campo-missionarios.csv", cookies=session_cookie)
+    assert csv_res.status_code == 200
+    assert "Data,Cidade,Povoado" in csv_res.text
+
+    # 5. Access /api/export/xlsx with ONLY the cookie
+    xlsx_res = client.get("/api/export/xlsx", cookies=session_cookie)
+    assert xlsx_res.status_code == 200
+
+    # 6. Tampered cookie is rejected with 401
+    bad_res = client.get("/dashboard", cookies={"kobo_session": "tampered:12345:fake"})
+    assert bad_res.status_code == 401
 
 
+def test_logout_clears_cookie(client, valid_auth_headers):
+    """
+    Verify /logout deletes the kobo_session cookie and redirects to /dashboard.
+    """
+    login_res = client.get("/dashboard", headers=valid_auth_headers)
+    assert "kobo_session" in login_res.cookies
+
+    logout_res = client.get("/logout", follow_redirects=False)
+    assert logout_res.status_code == 302
+    assert logout_res.headers["location"] == "/dashboard"
+    set_cookie = logout_res.headers.get("set-cookie", "")
+    assert 'kobo_session=""' in set_cookie or "Max-Age=0" in set_cookie or "max-age=0" in set_cookie.lower()
