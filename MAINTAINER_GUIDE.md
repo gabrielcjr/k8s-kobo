@@ -31,32 +31,32 @@ Originalmente, a coleta de dados de missões utilizava a plataforma gratuita na 
 
 ---
 
-## 3. Estrutura de Código e Responsabilidades
+## 3. Estrutura de Código Modular e Responsabilidades
 
-### [`app/main.py`](file:///home/ubuntu/k8s_kobo/app/main.py)
-Ponto de entrada da aplicação FastAPI. Responsável por:
-* **Autenticação HTTP Basic:** Função `check_credentials()` valida `renovamechurch:cba54321`.
-* **OpenRosa Protocol:**
-  * `/{username}/formList` e `/formList`: Catálogo XML consumido pelo KoBoCollect.
-  * `/formXml` e `/forms/{id}/form.xml`: Download da definição XForm.
-  * `HEAD` e `POST /{username}/submission` e `/submission`: Recebimento de fichas multipart enviadas pelo aplicativo.
-* **Formulário Web:**
-  * `GET /` e `GET /x/{slug}`: Renderização do formulário PWA responsivo.
-  * `GET /sw.js`, `GET /x/offline-app-worker.js`: Cache Service Worker para funcionamento 100% offline.
-  * `POST /api/submit`: Ingestão de submissões em JSON provenientes do formulário web.
-* **Painel Administrativo:**
-  * `GET /dashboard` e `GET /admin`: Renderiza a tela analítica com métricas e mapa.
-  * `GET /api/dashboard/live`: Endpoint JSON de polling a cada 3s para inserção de novas submissões em tempo real sem refresh.
-  * `GET /api/dashboard/submissions/{id}`: Consulta os dados de uma ficha individual (protegido por Basic Auth).
-  * `PUT /api/dashboard/submissions/{id}`: Atualização de campos de uma ficha (nome, data, idade, telefone, decisão, cidade, povoado, coordenadas, etc.).
-  * `DELETE /api/dashboard/submissions/{id}`: Exclusão permanente de uma ficha no SQLite.
-* **APIs de Integração e Exportação Padronizadas (16 Colunas A..P):**
-  * `GET /api/export/xlsx`: Exportação Excel binária (.xlsx) no layout oficial de 16 colunas A..P, com fórmulas de WhatsApp e Mapa que referenciam dinamicamente `F{row}` e `N{row}` (`row = idx + 2`). Não inclui dados em Família (coluna I) ou Bíblia doada (coluna K). Respeita todos os filtros ativos (cidade, povoado, decisão, missionário, busca).
-  * `GET /campo-missionarios.csv`: Exportação CSV no layout oficial de 16 colunas A..P, compatível com importação direta no Google Sheets ou Excel.
-  * `GET /api/dashboard/copy-tsv`: Exportação em texto puro tabulado (TSV) das 16 colunas A..P para cópia e colagem direta no Google Planilhas.
-  * `GET /data.csv`: Exportação CSV do KoBoToolbox com suporte a rótulos legíveis (`labels=true`) e filtros.
-  * `GET /api/export/geojson`: Exporta os pontos geográficos em formato GeoJSON RFC 7946 para QGIS ou ArcGIS.
-  * `GET /healthz`: Probe de liveness e readiness do Kubernetes.
+A aplicação adota o padrão **Clean Architecture / Modular FastAPI**, dividindo responsabilidades por domínio:
+
+```
+app/
+├── main.py              # Ponto de entrada FastAPI, montagem de estáticos e registro de roteadores (~35 linhas)
+├── config.py            # Constantes de diretórios (BASE, STATIC, TEMPLATES, FORMS) e Jinja2Templates
+├── auth.py              # Helpers de autenticação HTTP Basic e proteção de endpoints
+├── models.py            # Modelos Pydantic (WebSubmissionPayload, ActionSettingPayload, etc.)
+├── validation.py        # Validação de regras de negócio espelhadas do XForm
+├── utils.py             # Sanitização de nomes de arquivos e resolução de URL base efetiva
+├── database.py          # Camada de persistência SQLite com pool thread-safe
+├── openrosa.py          # Geração e parsing XML do protocolo OpenRosa (ODK / KoBoCollect)
+├── formatters/          # Formatadores de saída analítica
+│   ├── excel.py         # Gerador binário XLSX com fórmulas em células F{row}/N{row} e estilização
+│   ├── csv_tsv.py       # Geradores CSV (KoBo e 16 colunas A..P) e TSV para clipboard
+│   └── json_geojson.py  # Gerador GeoJSON RFC 7946 e KoBo API JSON
+└── routers/             # Controladores FastAPI organizados por domínio
+    ├── core.py          # /healthz, PWA Service Worker (/sw.js) e mídia estática
+    ├── openrosa.py      # /formList, /formXml, /xformsManifest, /submission (ODK Collect)
+    ├── webform.py       # Interface Web (/ e /x/{id}) e ingestão com validação (/api/submit)
+    ├── dashboard.py     # Painel (/dashboard e /admin), live polling e CRUD de fichas
+    ├── exports.py       # Exportações analíticas (/api/export/xlsx, /campo-missionarios.csv, TSV, GeoJSON)
+    └── kobo_api.py      # Compatibilidade com a API v1 e v2 do KoBoToolbox
+```
 
 ### [`app/database.py`](file:///home/ubuntu/k8s_kobo/app/database.py)
 Camada de acesso a dados SQLite:
