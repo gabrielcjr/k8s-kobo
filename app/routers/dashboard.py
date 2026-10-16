@@ -22,6 +22,16 @@ router = APIRouter(tags=["Admin & Dashboard"])
 @router.get("/dashboard", response_class=HTMLResponse)
 @router.get("/admin", response_class=HTMLResponse)
 def dashboard_page(request: Request, authorization: Optional[str] = Header(None)):
+    if request.cookies.get("kobo_logged_out") == "1":
+        resp = Response(
+            content="Autenticação necessária para o painel.",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"'}
+        )
+        resp.delete_cookie(key="kobo_logged_out", path="/")
+        resp.delete_cookie(key=COOKIE_NAME, path="/")
+        return resp
+
     if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Autenticação necessária para o painel.",
@@ -47,11 +57,23 @@ def dashboard_page(request: Request, authorization: Optional[str] = Header(None)
     set_session_cookie(response)
     return response
 
-@router.get("/logout")
-def logout():
-    response = RedirectResponse(url="/dashboard", status_code=302)
+@router.get("/logout", response_class=HTMLResponse)
+def logout(request: Request):
+    response = templates.TemplateResponse(request=request, name="logout.html", context={})
     response.delete_cookie(key=COOKIE_NAME, path="/")
+    response.set_cookie(key="kobo_logged_out", value="1", max_age=86400, path="/", httponly=True, samesite="lax")
     return response
+
+@router.get("/api/logout-challenge")
+def logout_challenge():
+    return Response(
+        content="Desconectado.",
+        status_code=401,
+        headers={
+            "WWW-Authenticate": 'Basic realm="Painel KoBoToolbox Renova-me"',
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
+    )
 
 @router.get("/api/dashboard/live")
 def get_dashboard_live(request: Request, authorization: Optional[str] = Header(None)):

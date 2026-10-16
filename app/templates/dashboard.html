@@ -588,7 +588,7 @@
         <span id="labelExportCsv">CSV</span>
       </a>
       <a href="/x/PY2hbkKi" target="_blank" class="btn btn-primary">Abrir Formulário Web</a>
-      <a href="/logout" class="btn btn-outline" style="border-color:#475569;color:#94a3b8;padding:8px 12px;font-size:0.84rem;" title="Encerrar sessão de 30 dias">
+      <a href="/logout" onclick="handleLogout(event)" class="btn btn-outline" style="border-color:#475569;color:#94a3b8;padding:8px 12px;font-size:0.84rem;" title="Encerrar sessão de 30 dias">
         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
         <span>Sair</span>
       </a>
@@ -1819,6 +1819,22 @@
       } finally {
         btn.disabled = false;
         btn.innerText = "💾 Salvar Ação";
+      }
+    }
+
+    function handleLogout(event) {
+      if (event) event.preventDefault();
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/api/logout-challenge", true, "sair", "sair");
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            window.location.href = "/logout";
+          }
+        };
+        xhr.send();
+      } catch(e) {
+        window.location.href = "/logout";
       }
     }
 

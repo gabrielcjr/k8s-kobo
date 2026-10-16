@@ -265,13 +265,26 @@ def test_30_day_auth_cookie_and_session_persistence(client, valid_auth_headers):
 
 def test_logout_clears_cookie(client, valid_auth_headers):
     """
-    Verify /logout deletes the kobo_session cookie and redirects to /dashboard.
+    Verify /logout renders the session ended page, deletes kobo_session,
+    and sets kobo_logged_out so subsequent requests force a fresh login prompt.
     """
     login_res = client.get("/dashboard", headers=valid_auth_headers)
     assert "kobo_session" in login_res.cookies
 
-    logout_res = client.get("/logout", follow_redirects=False)
-    assert logout_res.status_code == 302
-    assert logout_res.headers["location"] == "/dashboard"
+    # 1. /logout renders dedicated session closed screen and clears cookie
+    logout_res = client.get("/logout")
+    assert logout_res.status_code == 200
+    assert "Sessão Encerrada" in logout_res.text
     set_cookie = logout_res.headers.get("set-cookie", "")
     assert 'kobo_session=""' in set_cookie or "Max-Age=0" in set_cookie or "max-age=0" in set_cookie.lower()
+    assert "kobo_logged_out=1" in set_cookie
+
+    # 2. Subsequent dashboard access after logout is blocked with 401 (forcing prompt)
+    dash_after = client.get("/dashboard", cookies={"kobo_logged_out": "1"})
+    assert dash_after.status_code == 401
+    assert "Basic realm=" in dash_after.headers.get("www-authenticate", "")
+
+    # 3. /api/logout-challenge returns 401 to drop cached browser credentials
+    chal_res = client.get("/api/logout-challenge")
+    assert chal_res.status_code == 401
+    assert "Basic realm=" in chal_res.headers.get("www-authenticate", "")
