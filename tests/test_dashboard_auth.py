@@ -288,3 +288,34 @@ def test_logout_clears_cookie(client, valid_auth_headers):
     chal_res = client.get("/api/logout-challenge")
     assert chal_res.status_code == 401
     assert "Basic realm=" in chal_res.headers.get("www-authenticate", "")
+
+
+def test_dashboard_mobile_responsiveness_and_viewport(client, valid_auth_headers):
+    """
+    Verify dashboard includes responsive viewport meta tag, horizontal overflow protection,
+    and mobile media queries preventing navbar and actions from clipping offscreen on mobile devices.
+    """
+    res = client.get("/dashboard", headers=valid_auth_headers)
+    assert res.status_code == 200
+    html = res.text
+
+    # 1. Viewport tag is configured
+    assert 'name="viewport"' in html
+    assert "width=device-width" in html
+
+    # 2. Global overflow protection is present
+    assert "overflow-x: hidden" in html
+    assert "max-width: 100vw" in html
+
+    # 3. Responsive media queries for tablet & mobile
+    assert "@media (max-width: 768px)" in html
+    assert "@media (max-width: 480px)" in html
+    assert "grid-template-columns: 1fr 1fr" in html
+
+    # 4. Action buttons have unique IDs for styling & tests
+    assert 'id="btnWebForm"' in html
+    assert 'id="btnLogout"' in html
+    assert 'id="btnExportXlsx"' in html
+    assert 'id="btnExportCsv"' in html
+    assert 'id="liveStatusText"' in html
+
