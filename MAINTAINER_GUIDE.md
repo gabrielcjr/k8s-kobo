@@ -39,7 +39,7 @@ A aplicação adota o padrão **Clean Architecture / Modular FastAPI**, dividind
 app/
 ├── main.py              # Ponto de entrada FastAPI, montagem de estáticos e registro de roteadores (~35 linhas)
 ├── config.py            # Constantes de diretórios (BASE, STATIC, TEMPLATES, FORMS) e Jinja2Templates
-├── auth.py              # Helpers de autenticação HTTP Basic e proteção de endpoints
+├── auth.py              # Helpers de autenticação HTTP Basic, cookies de sessão de 30 dias (kobo_session) e logout
 ├── models.py            # Modelos Pydantic (WebSubmissionPayload, ActionSettingPayload, etc.)
 ├── validation.py        # Validação de regras de negócio espelhadas do XForm
 ├── utils.py             # Sanitização de nomes de arquivos e resolução de URL base efetiva
