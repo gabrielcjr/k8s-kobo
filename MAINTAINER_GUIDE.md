@@ -239,11 +239,9 @@ kubectl logs -n kobo -l app=kobo-server --tail=100
 #### 3. Como transferir registros para o Google Planilhas
 * Por **segurança dos dados dos contatos**, o acesso anônimo sem autenticação via `=IMPORTDATA` foi bloqueado com HTTP 401.
 * O fluxo oficial é realizado diretamente via Painel Administrativo (`/dashboard`):
-  1. Informe a **Próxima Linha Vazia** na planilha (ex: 510).
-  2. Clique em **📋 Copiar Registros Filtrados** ou no botão individual **📋 Copiar** da linha desejada.
-  3. No Google Planilhas (aba *Campo Missionários*), selecione a célula `A{linha}` (coluna A).
-  4. Pressione `Ctrl + V`.
-  5. As 16 colunas A..P serão coladas com as fórmulas de WhatsApp e Google Maps geradas e ativas.
+  1. No painel de exportação ou na tabela, clique em **📋 Copiar Registros Filtrados** ou no botão individual **📋 Copiar** da linha desejada (ou utilize **📊 Baixar Excel (.xlsx)** / **📄 Baixar CSV (.csv)**).
+  2. No Google Planilhas, selecione a primeira coluna e pressione `Ctrl + V`.
+  3. As 16 colunas oficiais A..P serão coladas diretamente com as fórmulas de WhatsApp e Google Maps prontas e ativas (sem incluir campos de Família ou Bíblia doada, mantendo o alinhamento de colunas).
 
 ---
 
@@ -256,6 +254,7 @@ kubectl logs -n kobo -l app=kobo-server --tail=100
 | **Outubro/2026** | Remoção de links do dashboard e backup local do formulário | Segurança da informação: missionários comuns não devem ver métricas gerais nem baixar bases locais. |
 | **Outubro/2026** | Purga automática de formulários enviados da memória local | Impedir que terceiros tenham acesso a dados sensíveis de cadastros anteriores no aparelho do missionário. |
 | **Outubro/2026** | Implementação de Live Polling (3s) no Dashboard | Permitir acompanhamento ao vivo de campanhas evangelísticas em telões e computadores da igreja sem necessidade de recarregar a página. |
-| **Outubro/2026** | Remoção da API aberta e fluxo seguro de Copiar & Colar para o Google Sheets | Segurança dos dados: fechar acesso público e desprotegido a contatos; geração automática de fórmulas exatas de WhatsApp (`=IF(ISBLANK(F510)...)`) e Mapa (`=IF(ISBLANK(N510)...)`). |
+| **Outubro/2026** | Remoção da API aberta e fluxo seguro de Copiar & Colar para o Google Sheets | Segurança dos dados: fechar acesso público e desprotegido a contatos; geração automática de fórmulas exatas de WhatsApp e Mapa. |
 | **Outubro/2026** | Exportações dinâmicas filtradas (.xlsx e .csv) sincronizadas com o Dashboard | Permitir que a liderança baixe planilhas e arquivos CSV contendo estritamente as fichas da cidade e filtros selecionados na interface. |
+| **Outubro/2026** | Padronização de 16 colunas A..P e simplificação da UI (remoção de "próxima linha vazia") | Eliminar necessidade de calcular números arbitrários de linhas; adotar numeração natural e layout oficial de 16 colunas A..P em todos os formatos (.xlsx, .csv, TSV). |
 

@@ -785,7 +785,7 @@
       <div class="card">
         <label class="card-label">Telefone <span class="required">*</span></label>
         <div class="card-hint">O telefone deve conter exatamente 11 números (Ex 75988888888)</div>
-        <input type="text" id="telefoneInput" name="Telefone" placeholder="75988888888" maxlength="15" required>
+        <input type="text" id="telefoneInput" name="Telefone" placeholder="75988888888" maxlength="15" pattern="\D*(\d\D*){11}" title="O telefone deve conter exatamente 11 números (Ex 75988888888)" required>
       </div>
 
       <!-- Gênero -->
@@ -1454,6 +1454,12 @@
           if (resp.ok) {
             uploadedIds.add(item.id);
             uploadedCount++;
+          } else if (resp.status === 422) {
+            // Dados rejeitados pela validação do servidor: volta para rascunho para correção
+            const all = getRecords();
+            const rec = all.find(r => r.id === item.id);
+            if (rec) { rec.status = "draft"; saveRecords(all); }
+            showToast("⚠ Uma ficha foi recusada pelo servidor e voltou para rascunho. Revise os dados.");
           }
         } catch (err) {
           console.warn("[AutoSync] Falha ao enviar item:", item.id, err);

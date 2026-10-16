@@ -324,8 +324,39 @@ class WebSubmissionPayload(BaseModel):
     povoado: Optional[str] = None
     acao: Optional[str] = None
 
+VALID_GENEROS = {"Masculino", "Feminino"}
+VALID_RECEBEU_JESUS = {"Sim", "Não", "evangelico", "Vai decidir depois"}
+
+
+def validate_web_submission(payload: "WebSubmissionPayload") -> Optional[str]:
+    """Server-side mirror of the XForm rules (Missionarios_Renovame.xml).
+
+    Geolocalizador is intentionally NOT required here: the web form sends
+    "0.0 0.0 0.0 999.0" when GPS is denied/unavailable, and exports render
+    those as "[NULL,NULL]" / "Localização não capturada".
+    """
+    if not (payload.nome or "").strip():
+        return "Nome é obrigatório."
+    if not (payload.missionario or "").strip():
+        return "Nome do Missionário(a) é obrigatório."
+    tel_digits = re.sub(r"\D", "", payload.telefone or "")
+    if not re.fullmatch(r"\d{11}", tel_digits):
+        return "O telefone deve conter exatamente 11 números (Ex 75988888888)."
+    if payload.idade is None or not (0 <= payload.idade <= 130):
+        return "Idade é obrigatória (0 a 130)."
+    if payload.genero not in VALID_GENEROS:
+        return "Gênero inválido."
+    if payload.recebeu_jesus not in VALID_RECEBEU_JESUS:
+        return "Resposta inválida para 'Recebeu Jesus?'."
+    return None
+
+
 @app.post("/api/submit")
 def api_submit(payload: WebSubmissionPayload):
+    error = validate_web_submission(payload)
+    if error:
+        raise HTTPException(status_code=422, detail=error)
+    payload.telefone = re.sub(r"\D", "", payload.telefone)
     new_uuid = str(uuid.uuid4())
     inserted_id = insert_submission(
         uuid=new_uuid,
@@ -438,8 +469,7 @@ def get_dashboard_live(authorization: Optional[str] = Header(None)):
             "timestamp": datetime.now(timezone.utc).isoformat()
         },
         headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Access-Control-Allow-Origin": "*"
+            "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     )
 
@@ -587,8 +617,8 @@ def export_xlsx(
         sub_cid = (s.get("cidade") or "").strip()
         sub_pov = (s.get("povoado") or "").strip()
 
-        row_cidade = sub_cid or (cidade.strip() if cidade and cidade.strip() else "Teodoro Sampaio")
-        row_povoado = sub_pov or (povoado.strip() if povoado and povoado.strip() else "Sede")
+        row_cidade = (cidade.strip() if cidade and cidade.strip() else None) or sub_cid or "Cruz das Almas"
+        row_povoado = (povoado.strip() if povoado and povoado.strip() else None) or sub_pov or "Centro"
 
         ws.append([
             d_val,
@@ -788,8 +818,8 @@ def format_campo_missionarios_csv(
             sub_cid = (s.get("cidade") or "").strip()
             sub_pov = (s.get("povoado") or "").strip()
 
-            row_cidade = (cidade.strip() if cidade and cidade.strip() else None) or sub_cid or "Teodoro Sampaio"
-            row_povoado = (povoado.strip() if povoado and povoado.strip() else None) or sub_pov or "Sede"
+            row_cidade = (cidade.strip() if cidade and cidade.strip() else None) or sub_cid or "Cruz das Almas"
+            row_povoado = (povoado.strip() if povoado and povoado.strip() else None) or sub_pov or "Centro"
 
             writer.writerow([
                 d_val,
@@ -854,15 +884,8 @@ def format_campo_missionarios_csv(
             sub_cid = (s.get("cidade") or "").strip()
             sub_pov = (s.get("povoado") or "").strip()
 
-            if cidade and cidade.strip() and cidade.strip() != "Cruz das Almas":
-                row_cidade = cidade.strip()
-            else:
-                row_cidade = sub_cid or (cidade.strip() if cidade else "Cruz das Almas")
-
-            if povoado and povoado.strip() and povoado.strip() != "Centro":
-                row_povoado = povoado.strip()
-            else:
-                row_povoado = sub_pov or (povoado.strip() if povoado else "Centro")
+            row_cidade = (cidade.strip() if cidade and cidade.strip() else None) or sub_cid or "Cruz das Almas"
+            row_povoado = (povoado.strip() if povoado and povoado.strip() else None) or sub_pov or "Centro"
 
             writer.writerow([
                 d_val,
@@ -1029,7 +1052,6 @@ def serve_csv_response(
         headers={
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": f'inline; filename="{fn}"',
-            "Access-Control-Allow-Origin": "*",
             "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     )
@@ -1322,7 +1344,7 @@ def export_geojson(
     }
     return JSONResponse(
         content=geojson,
-        headers={"Access-Control-Allow-Origin": "*"}
+        headers={"Cache-Control": "no-cache"}
     )
 
 # --- KOBOTOOLBOX API V2 ASSET & FORM METADATA ---

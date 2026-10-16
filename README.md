@@ -50,7 +50,7 @@ flowchart TD
 
     subgraph Consumo_e_Admin
         DASH["📊 Dashboard em Tempo Real (Polling /api/dashboard/live 3s)"]
-        SHEETS["📈 Google Planilhas (=IMPORTDATA data.csv)"]
+        SHEETS["📈 Google Planilhas (Exportação 16 colunas A..P / Copiar e Colar)"]
     end
 
     M1 -->|HTTP POST Multipart| NGINX
@@ -59,7 +59,7 @@ flowchart TD
     APP <--> DB
     DB --- PVC
     DASH <-->|Live Updates sem Refresh| APP
-    SHEETS <-->|Leitura CSV| APP
+    SHEETS <-->|Importação CSV / Cópia TSV| APP
 ```
 
 ---
@@ -126,27 +126,27 @@ flowchart TD
   * O mapa interativo (Leaflet) plota instantaneamente novos marcadores geográficos com popups informativos.
   * Mantém filtros de busca ativos sem interrupção para o administrador.
 
-### 4. Integração Segura com Google Planilhas (Copiar e Colar)
+### 4. Integração Segura com Google Planilhas (Exportação e Cópia)
 * **Remoção da API Aberta por Segurança:** Por segurança da informação dos contatos de campo, o acesso anônimo à API de exportação foi desativado (retornando HTTP 401).
-* **Novo Fluxo de Transferência (Copiar e Colar):** Ao invés de usar `=IMPORTDATA()`, a liderança copia os registros diretamente no Dashboard (em formato TSV de 16 colunas A..P) e cola na célula `A{linha}` do Google Sheets.
+* **Fluxo de Transferência Padronizado (16 Colunas A..P):** Os dados são transferidos diretamente no Dashboard através dos botões de download Excel/CSV ou do botão **"Copiar Registros Filtrados"** (em formato TSV de 16 colunas A..P), colando diretamente no Google Sheets (`Ctrl + V`). Não inclui colunas de Família (coluna I) ou Bíblia doada (coluna K), mantendo as posições reservadas para preservar o alinhamento de fórmulas.
 * **Fórmulas Automáticas Geradas:**
   * **WhatsApp (Coluna G):**
     ```excel
-    =IF(ISBLANK(F510); ""; IF(F510 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F510; "Chamar no WhatsApp")))
+    =IF(ISBLANK(F2); ""; IF(F2 = 0; "Telefone não informado"; HYPERLINK("https://wa.me/55" & F2; "Chamar no WhatsApp")))
     ```
   * **Mapa (Coluna O):**
     ```excel
-    =IF(ISBLANK(N510); ""; IF(N510 = "[NULL,NULL]"; "Localização não capturada";IF(N510 = "[0.1,0.1]"; "Localização não capturada"; IF(N510 = "[1,1]"; "Localização não capturada"; IF(N510 = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N510; "-?\d+\.\d+,-?\d+\.\d+"); "Ver no mapa"))))))
+    =IF(ISBLANK(N2); ""; IF(N2 = "[NULL,NULL]"; "Localização não capturada";IF(N2 = "[0.1,0.1]"; "Localização não capturada"; IF(N2 = "[1,1]"; "Localização não capturada"; IF(N2 = "[1,2]"; "Localização não capturada";HYPERLINK("https://www.google.com/maps?q=" & REGEXEXTRACT(N2; "-?\d+\.\d+,-?\d+\.\d+"); "Ver no mapa"))))))
     ```
-* **Botão Individual "Copiar Linha":** Cada ficha na tabela possui botão para cópia individual imediata, auto-incrementando o número da próxima linha na planilha.
+* **Numeração Natural de Linhas:** Na exportação, o cabeçalho fica na linha 1 e os dados começam na linha 2 (referenciando `F2`/`N2`, até a linha 26 referenciando `F26`/`N26`, etc.), eliminando a necessidade de configurar números arbitrários de linhas no painel.
 
 ### 5. Exportações Dinâmicas Filtradas (.xlsx e .csv)
 * **Sincronização com os Filtros do Dashboard:** Ao filtrar os registros na tela por Cidade (`filterCidade`), Povoado (`filterPovoado`), Decisão por Jesus (`filterJesus`), Missionário (`filterMissionario`), Gênero (`filterGenero`) ou Busca Geral (`searchInput`), as exportações em Excel (`.xlsx`) e CSV (`.csv`) **refletem automaticamente apenas os dados filtrados**.
 * **URLs Parametrizadas Seguras:**
-  * `GET /api/export/xlsx?cidade=Valença` &rarr; Gera pasta de trabalho Excel contendo unicamente os cadastros da cidade selecionada, com colunas Cidade e Povoado integradas.
-  * `GET /data.csv?cidade=Valença` (ou `/api/export/csv?cidade=Valença`) &rarr; Gera arquivo CSV contendo apenas as fichas da cidade selecionada.
+  * `GET /api/export/xlsx?cidade=Valença` &rarr; Gera pasta de trabalho Excel contendo unicamente os cadastros da cidade selecionada nas 16 colunas oficiais A..P.
+  * `GET /campo-missionarios.csv?cidade=Valença` &rarr; Gera arquivo CSV contendo apenas as fichas da cidade selecionada nas 16 colunas oficiais A..P com fórmulas.
   * Suporta filtros combinados (ex: `?cidade=...&povoado=...&recebeu_jesus=Sim&search=...`).
-* **Botões Interativos no Dashboard:** Links de exportação na barra superior e no cabeçalho da tabela se adaptam em tempo real mostrando a contagem de registros filtrados (ex: *Exportar Excel (12 filtrados)*).
+* **Botões Interativos no Dashboard:** Todos os links de exportação CSV e Excel na barra superior, no painel de planilhas e no cabeçalho da tabela utilizam o formato padronizado de 16 colunas A..P e adaptam-se em tempo real aos filtros ativos.
 
 ---
 

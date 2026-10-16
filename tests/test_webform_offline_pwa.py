@@ -129,6 +129,7 @@ def test_api_submit_defaults_data_date(client):
     """
     payload = {
         "nome": "Pedro Henrique",
+        "idade": 30,
         "telefone": "75977665544",
         "genero": "Masculino",
         "recebeu_jesus": "evangelico",
@@ -184,3 +185,32 @@ def test_webform_submitted_records_purged_for_security(client):
     assert "segurança da informação" in html
 
 
+
+
+def test_api_submit_server_side_validation_mirrors_xform(client):
+    """
+    /api/submit must enforce the same rules as Missionarios_Renovame.xml
+    (telefone 11 dígitos, idade obrigatória, opções válidas), not just the browser.
+    """
+    base = {
+        "nome": "Validação Teste",
+        "idade": 30,
+        "telefone": "75988887777",
+        "genero": "Feminino",
+        "recebeu_jesus": "Sim",
+        "missionario": "Missionário Validador",
+    }
+    assert client.post("/api/submit", json={**base, "telefone": "12345"}).status_code == 422
+    assert client.post("/api/submit", json={**base, "idade": None}).status_code == 422
+    assert client.post("/api/submit", json={**base, "genero": "Outro"}).status_code == 422
+    assert client.post("/api/submit", json={**base, "recebeu_jesus": "Talvez"}).status_code == 422
+    assert client.post("/api/submit", json={**base, "missionario": "   "}).status_code == 422
+
+    # Formatted phone is accepted and normalized to digits
+    ok = client.post("/api/submit", json={**base, "telefone": "(75) 98888-7777"})
+    assert ok.status_code == 200
+    record = get_submission_by_uuid(ok.json()["uuid"])
+    assert record["telefone"] == "75988887777"
+
+    # GPS is optional (web form sends a placeholder when GPS is denied)
+    assert client.post("/api/submit", json={**base, "geopoint": None}).status_code == 200

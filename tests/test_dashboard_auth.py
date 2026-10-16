@@ -42,7 +42,7 @@ def test_dashboard_authenticated_success(client, valid_auth_headers):
     assert "Missionários Renova-me" in html
     assert "Total de Registros" in html or "Total de Vidas" in html or "Total" in html
     assert "/api/export/xlsx" in html
-    assert "/data.csv" in html
+    assert "/campo-missionarios.csv" in html
 
 def test_admin_alias_authenticated_success(client, valid_auth_headers):
     """
@@ -137,6 +137,7 @@ def test_dashboard_api_update_submission(client, valid_auth_headers):
     # 1. Create a submission
     create_res = client.post("/api/submit", json={
         "nome": "Original Name",
+        "idade": 30,
         "telefone": "75999881122",
         "genero": "Masculino",
         "recebeu_jesus": "Não",
@@ -180,6 +181,7 @@ def test_dashboard_api_delete_submission(client, valid_auth_headers):
     # 1. Create a submission
     create_res = client.post("/api/submit", json={
         "nome": "Para Excluir",
+        "idade": 30,
         "telefone": "75988776655",
         "genero": "Feminino",
         "recebeu_jesus": "Sim",

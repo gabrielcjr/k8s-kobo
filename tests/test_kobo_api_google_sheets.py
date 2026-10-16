@@ -620,3 +620,10 @@ def test_dashboard_ui_clean_start_row_removed(client, valid_auth_headers):
     assert "btnPanelExportCsv" in html
 
 
+def test_dashboard_csv_buttons_use_16_column_layout(client, valid_auth_headers):
+    """All dashboard CSV buttons (and the JS filter updater) must point to the 16-column export."""
+    html = client.get("/dashboard", headers=valid_auth_headers).text
+    assert 'href="/data.csv"' not in html
+    assert "const csvUrl = `/campo-missionarios.csv${qs}`" in html
+    assert "updateFormulaPreviews" not in html
+    assert "Access-Control-Allow-Origin" not in client.get("/campo-missionarios.csv", headers=valid_auth_headers).headers
