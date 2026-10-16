@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DATA_DIR=/data \
     KOBO_USER=renovamechurch \
-    KOBO_PASS=Rvehonraegloria
+    KOBO_PASS=cba54321
 
 RUN mkdir -p /data
 

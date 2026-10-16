@@ -10,7 +10,7 @@ FORM_UUID = "fe67ba249d41444a9de6eea1f809669d"
 FORM_MD5 = "884b8ea8aa9fd1bc7419b2a47fbb9816"
 
 AUTH_USER = os.environ.get("KOBO_USER", "renovamechurch")
-AUTH_PASS = os.environ.get("KOBO_PASS", "Rvehonraegloria")
+AUTH_PASS = os.environ.get("KOBO_PASS", "cba54321")
 
 def check_credentials(auth_header: Optional[str]) -> bool:
     if not auth_header:

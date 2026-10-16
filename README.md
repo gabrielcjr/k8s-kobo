@@ -23,7 +23,7 @@ Substitui a infraestrutura pesada original do KoBoToolbox (PostgreSQL, Redis, Ce
 ## 🔐 Credenciais de Acesso
 
 * **Usuário:** `renovamechurch`
-* **Senha:** `Rvehonraegloria`
+* **Senha:** `cba54321`
 * **Escopo:** Aplicativo móvel KoBoCollect, Painel de Controle (`/dashboard` e `/admin`), endpoint de polling em tempo real (`/api/dashboard/live`) e exportações analíticas.
 
 ---
@@ -119,7 +119,7 @@ flowchart TD
   * **Purga Imediata pós-envio:** Assim que uma ficha é enviada com sucesso ao servidor (seja envio direto ou sincronização em lote), ela é **removida permanentemente da memória do aparelho**. Apenas rascunhos incompletos e fichas pendentes de envio são mantidos no dispositivo.
 
 ### 3. Painel Administrativo em Tempo Real (`/dashboard`)
-* Protegido por Basic Auth (`renovamechurch:Rvehonraegloria`).
+* Protegido por Basic Auth (`renovamechurch:cba54321`).
 * **Auto-Atualização sem Refresh de Tela:** Executa polling assíncrono a cada 3 segundos via [`/api/dashboard/live`](file:///home/ubuntu/k8s_kobo/app/main.py#L286-L308):
   * Novos registros são injetados no topo da tabela com destaque animado (*glow verde*).
   * Os cards de KPI (*Total de Vidas*, *Hoje*, *Receberam Jesus*, *Missionários Ativos*) são incrementados automaticamente.

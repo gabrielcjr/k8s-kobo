@@ -35,7 +35,7 @@ Originalmente, a coleta de dados de missões utilizava a plataforma gratuita na 
 
 ### [`app/main.py`](file:///home/ubuntu/k8s_kobo/app/main.py)
 Ponto de entrada da aplicação FastAPI. Responsável por:
-* **Autenticação HTTP Basic:** Função `check_credentials()` valida `renovamechurch:Rvehonraegloria`.
+* **Autenticação HTTP Basic:** Função `check_credentials()` valida `renovamechurch:cba54321`.
 * **OpenRosa Protocol:**
   * `/{username}/formList` e `/formList`: Catálogo XML consumido pelo KoBoCollect.
   * `/formXml` e `/forms/{id}/form.xml`: Download da definição XForm.

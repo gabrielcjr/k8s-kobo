@@ -29,7 +29,7 @@ spec:
         - name: KOBO_USER
           value: "renovamechurch"
         - name: KOBO_PASS
-          value: "Rvehonraegloria"
+          value: "cba54321"
         volumeMounts:
         - name: data-volume
           mountPath: /data

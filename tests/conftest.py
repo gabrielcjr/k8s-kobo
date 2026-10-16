@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 temp_dir = tempfile.TemporaryDirectory()
 os.environ["DATA_DIR"] = temp_dir.name
 os.environ["KOBO_USER"] = "renovamechurch"
-os.environ["KOBO_PASS"] = "Rvehonraegloria"
+os.environ["KOBO_PASS"] = "cba54321"
 
 import sys
 from pathlib import Path
@@ -32,7 +32,7 @@ def client():
 @pytest.fixture
 def valid_auth_headers():
     import base64
-    creds = base64.b64encode(b"renovamechurch:Rvehonraegloria").decode("utf-8")
+    creds = base64.b64encode(b"renovamechurch:cba54321").decode("utf-8")
     return {"Authorization": f"Basic {creds}"}
 
 @pytest.fixture
