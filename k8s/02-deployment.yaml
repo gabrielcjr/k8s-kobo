@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: kobo-server
-        image: docker.io/library/kobo-server:latest
+        image: gacarneirojrx/kobo-server:e99fe6093e1ec1f56fc4471c00cfb206cbb842cf
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
