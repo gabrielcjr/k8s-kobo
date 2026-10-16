@@ -25,11 +25,12 @@ router = APIRouter(tags=["KoBoToolbox API Compatibility"])
 @router.get("/api/v1/data/{form_id}.json")
 @router.head("/api/v1/data/{form_id}.json")
 def get_kobo_json_endpoint(
+    request: Request,
     asset_id: Optional[str] = None,
     form_id: Optional[str] = None,
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
     submissions = get_all_submissions()
@@ -42,8 +43,12 @@ def get_kobo_json_endpoint(
 
 @router.get("/api/v1/data/{form_id}")
 @router.head("/api/v1/data/{form_id}")
-def get_v1_data_array(form_id: str, authorization: Optional[str] = Header(None)):
-    auth_err = check_auth_or_401(authorization)
+def get_v1_data_array(
+    request: Request,
+    form_id: str,
+    authorization: Optional[str] = Header(None)
+):
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
     submissions = get_all_submissions()

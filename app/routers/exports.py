@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Response, Header
+from fastapi import APIRouter, Response, Header, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from ..utils import sanitize_filename_part
@@ -18,6 +18,7 @@ router = APIRouter(tags=["Exports"])
 @router.get("/api/export/xlsx")
 @router.head("/api/export/xlsx")
 def export_xlsx(
+    request: Request,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
     recebeu_jesus: Optional[str] = None,
@@ -27,7 +28,7 @@ def export_xlsx(
     data_date: Optional[str] = None,
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
 
@@ -59,6 +60,7 @@ def export_xlsx(
 @router.get("/api/export/campo-missionarios.csv")
 @router.head("/api/export/campo-missionarios.csv")
 def get_campo_missionarios_csv(
+    request: Request,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
     recebeu_jesus: Optional[str] = None,
@@ -73,7 +75,7 @@ def get_campo_missionarios_csv(
     delimiter: Optional[str] = ",",
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
 
@@ -125,6 +127,7 @@ def get_campo_missionarios_csv(
 @router.get("/api/dashboard/copy-tsv")
 @router.head("/api/dashboard/copy-tsv")
 def get_dashboard_copy_tsv(
+    request: Request,
     start_row: int = 2,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
@@ -138,7 +141,7 @@ def get_dashboard_copy_tsv(
     headers: bool = False,
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
 
@@ -198,6 +201,7 @@ def get_dashboard_copy_tsv(
 @router.get("/api/v1/data/{form_id}.csv")
 @router.head("/api/v1/data/{form_id}.csv")
 def get_kobo_csv_endpoint(
+    request: Request,
     asset_id: Optional[str] = None,
     export_id: Optional[str] = None,
     form_id: Optional[str] = None,
@@ -219,12 +223,13 @@ def get_kobo_csv_endpoint(
     delimiter: Optional[str] = ",",
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
 
     if format in ("sheets", "campo_missionarios") or view in ("sheets", "campo_missionarios"):
         return get_campo_missionarios_csv(
+            request=request,
             cidade=cidade, povoado=povoado,
             recebeu_jesus=recebeu_jesus, missionario=missionario,
             genero=genero, search=search, data_date=data_date,
@@ -253,6 +258,7 @@ def get_kobo_csv_endpoint(
 @router.get("/api/export/geojson")
 @router.head("/api/export/geojson")
 def export_geojson(
+    request: Request,
     cidade: Optional[str] = None,
     povoado: Optional[str] = None,
     recebeu_jesus: Optional[str] = None,
@@ -262,7 +268,7 @@ def export_geojson(
     data_date: Optional[str] = None,
     authorization: Optional[str] = Header(None)
 ):
-    auth_err = check_auth_or_401(authorization)
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
 

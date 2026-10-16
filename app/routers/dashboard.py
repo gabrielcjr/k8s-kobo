@@ -1,12 +1,11 @@
 from typing import Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Response, HTTPException, Header
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from ..config import templates
 from ..utils import get_effective_base_url
-from ..auth import check_auth_or_401
-from ..openrosa import check_credentials
+from ..auth import check_auth_or_401, is_authenticated, set_session_cookie, COOKIE_NAME
 from ..models import ActionSettingPayload, SubmissionUpdatePayload
 from ..database import (
     get_all_submissions,
@@ -23,7 +22,7 @@ router = APIRouter(tags=["Admin & Dashboard"])
 @router.get("/dashboard", response_class=HTMLResponse)
 @router.get("/admin", response_class=HTMLResponse)
 def dashboard_page(request: Request, authorization: Optional[str] = Header(None)):
-    if not authorization or not check_credentials(authorization):
+    if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Autenticação necessária para o painel.",
             status_code=401,
@@ -37,7 +36,7 @@ def dashboard_page(request: Request, authorization: Optional[str] = Header(None)
     active_povoado = get_setting("active_povoado", "Centro")
     active_acao = get_setting("active_acao", "Missão Cruz das Almas")
 
-    return templates.TemplateResponse(request=request, name="dashboard.html", context={
+    response = templates.TemplateResponse(request=request, name="dashboard.html", context={
         "submissions": submissions,
         "stats": stats,
         "base_url": base_url,
@@ -45,10 +44,18 @@ def dashboard_page(request: Request, authorization: Optional[str] = Header(None)
         "active_povoado": active_povoado,
         "active_acao": active_acao
     })
+    set_session_cookie(response)
+    return response
+
+@router.get("/logout")
+def logout():
+    response = RedirectResponse(url="/dashboard", status_code=302)
+    response.delete_cookie(key=COOKIE_NAME, path="/")
+    return response
 
 @router.get("/api/dashboard/live")
-def get_dashboard_live(authorization: Optional[str] = Header(None)):
-    if not authorization or not check_credentials(authorization):
+def get_dashboard_live(request: Request, authorization: Optional[str] = Header(None)):
+    if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Unauthorized",
             status_code=401,
@@ -78,8 +85,8 @@ def get_active_action_endpoint():
     }
 
 @router.post("/api/admin/set-active-action")
-def set_active_action(payload: ActionSettingPayload, authorization: Optional[str] = Header(None)):
-    auth_err = check_auth_or_401(authorization)
+def set_active_action(request: Request, payload: ActionSettingPayload, authorization: Optional[str] = Header(None)):
+    auth_err = check_auth_or_401(authorization=authorization, request=request)
     if auth_err:
         return auth_err
     set_setting("active_cidade", payload.cidade.strip())
@@ -94,8 +101,8 @@ def set_active_action(payload: ActionSettingPayload, authorization: Optional[str
     }
 
 @router.get("/api/dashboard/submissions/{submission_id}")
-def api_get_submission(submission_id: int, authorization: Optional[str] = Header(None)):
-    if not authorization or not check_credentials(authorization):
+def api_get_submission(submission_id: int, request: Request, authorization: Optional[str] = Header(None)):
+    if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Unauthorized",
             status_code=401,
@@ -111,9 +118,10 @@ def api_get_submission(submission_id: int, authorization: Optional[str] = Header
 def api_update_submission(
     submission_id: int,
     payload: SubmissionUpdatePayload,
+    request: Request,
     authorization: Optional[str] = Header(None)
 ):
-    if not authorization or not check_credentials(authorization):
+    if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Unauthorized",
             status_code=401,
@@ -127,8 +135,8 @@ def api_update_submission(
 
 @router.delete("/api/dashboard/submissions/{submission_id}")
 @router.post("/api/dashboard/submissions/{submission_id}/delete")
-def api_delete_submission(submission_id: int, authorization: Optional[str] = Header(None)):
-    if not authorization or not check_credentials(authorization):
+def api_delete_submission(submission_id: int, request: Request, authorization: Optional[str] = Header(None)):
+    if not is_authenticated(authorization=authorization, request=request):
         return Response(
             content="Unauthorized",
             status_code=401,
